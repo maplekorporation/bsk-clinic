@@ -4650,6 +4650,8 @@ body.dark-mode .service-price-original {
     margin-top: 30px;
     display: flex;
     justify-content: flex-end;
+    align-items: center;
+    gap: 14px;
 }
 
 .booking-submit-btn {
@@ -4697,6 +4699,61 @@ body.dark-mode .service-price-original {
     .booking-submit-btn {
         width: 100%;
         padding: 16px 20px;
+    }
+}
+
+/* Clear All Fields Button */
+.booking-clear-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: transparent;
+    color: #e74c3c;
+    border: 1.5px solid #e74c3c;
+    border-radius: var(--radius-sm);
+    padding: 12px 22px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.booking-clear-btn:hover {
+    background: rgba(231, 76, 60, 0.08);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.15);
+}
+
+.booking-clear-btn:active {
+    transform: translateY(1px);
+}
+
+.booking-clear-btn i {
+    font-size: 1rem;
+    transition: transform 0.35s ease;
+}
+
+.booking-clear-btn:hover i {
+    transform: rotate(-360deg);
+}
+
+@media (max-width: 768px) {
+    .booking-submit-wrapper {
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .booking-submit-btn {
+        width: 100%;
+        padding: 16px 20px;
+    }
+
+    .booking-clear-btn {
+        width: 100%;
+        padding: 14px 20px;
+        order: 2;
     }
 }
 

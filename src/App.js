@@ -540,6 +540,17 @@ function App() {
     );
   };
 
+  const handleClearBookingForm = () => {
+    setSelectedPatient(null);
+    setSelectedServices([]);
+    setPaymentMode('UPI');
+    setReferredBy('Self');
+    setIsNewPatientForm(false);
+    setNewPatientDetails({ name: '', phone: '', age: '', gender: 'Male', address: '' });
+    setSearchQuery('');
+    setSearchResults([]);
+  };
+
   const handleNewPatientChange = (e) => {
     const { name, value } = e.target;
     setNewPatientDetails(prev => ({
@@ -593,8 +604,8 @@ function App() {
       }
 
       const subtotal = selectedServices.reduce((acc, s) => acc + (s.customPrice ?? s.price), 0);
-      const gst = Math.round(subtotal * 0.18);
-      const total = subtotal + gst;
+      const gst = 0;
+      const total = subtotal;
 
       const newBookingObj = {
         patientId: patientObj.id,
@@ -1079,12 +1090,6 @@ function App() {
               <img src="logo.png" alt="Bak o Shrobon Kendra - Hearing, Nose & Speaking Centre" className="logo-img footer-logo-img" />
             </a>
             <p>{t.footer.aboutText}</p>
-            <div className="social-links">
-              <a href="https://facebook.com/" className="social-link" aria-label="Bak o Shrobon Kendra Facebook"><i className="fa-brands fa-facebook-f"></i></a>
-              <a href="https://instagram.com/" className="social-link" aria-label="Bak o Shrobon Kendra Instagram"><i className="fa-brands fa-instagram"></i></a>
-              <a href="https://linkedin.com/" className="social-link" aria-label="Bak o Shrobon Kendra LinkedIn"><i className="fa-brands fa-linkedin-in"></i></a>
-              <a href="https://youtube.com/" className="social-link" aria-label="Bak o Shrobon Kendra YouTube"><i className="fa-brands fa-youtube"></i></a>
-            </div>
           </div>
           
           <div>
@@ -1364,6 +1369,16 @@ function App() {
               <div className="portal-tab-content">
                 <div className="portal-view-header">
                   <h2 className="portal-view-title">New Patient Booking</h2>
+                  {(selectedPatient || selectedServices.length > 0 || isNewPatientForm || searchQuery.trim()) && (
+                    <button 
+                      type="button"
+                      className="booking-clear-btn"
+                      onClick={handleClearBookingForm}
+                    >
+                      <i className="fa-solid fa-rotate-left"></i>
+                      <span>Clear All Fields</span>
+                    </button>
+                  )}
                 </div>
 
                 {/* Step 1: Find/Select Patient */}
@@ -1662,25 +1677,21 @@ function App() {
                       </div>
                       
                       <div className="billing-calc-box">
-                        <div className="billing-calc-row">
-                          <span>Subtotal:</span>
-                          <span>₹{selectedServices.reduce((acc, s) => acc + (s.customPrice ?? s.price), 0).toLocaleString('en-IN')}</span>
-                        </div>
-                        <div className="billing-calc-row">
-                          <span>CGST (9%):</span>
-                          <span>₹{Math.round(selectedServices.reduce((acc, s) => acc + (s.customPrice ?? s.price), 0) * 0.09).toLocaleString('en-IN')}</span>
-                        </div>
-                        <div className="billing-calc-row">
-                          <span>SGST (9%):</span>
-                          <span>₹{Math.round(selectedServices.reduce((acc, s) => acc + (s.customPrice ?? s.price), 0) * 0.09).toLocaleString('en-IN')}</span>
-                        </div>
                         <div className="billing-calc-row grand-total">
-                          <span>Grand Total:</span>
-                          <span>₹{Math.round(selectedServices.reduce((acc, s) => acc + (s.customPrice ?? s.price), 0) * 1.18).toLocaleString('en-IN')}</span>
+                          <span>Total Amount:</span>
+                          <span>₹{selectedServices.reduce((acc, s) => acc + (s.customPrice ?? s.price), 0).toLocaleString('en-IN')}</span>
                         </div>
                       </div>
 
                       <div className="booking-submit-wrapper">
+                        <button 
+                          type="button"
+                          className="booking-clear-btn"
+                          onClick={handleClearBookingForm}
+                        >
+                          <i className="fa-solid fa-rotate-left"></i>
+                          <span>Clear All</span>
+                        </button>
                         <button 
                           onClick={handleSaveBooking}
                           className="booking-submit-btn"
@@ -2474,9 +2485,6 @@ function App() {
                       <span className="kpi-value">₹{totalRevenue.toLocaleString('en-IN')}</span>
                       <span className="kpi-label">Total Revenue</span>
                     </div>
-                    <div className="kpi-footer">
-                      <span>GST: ₹{totalGST.toLocaleString('en-IN')}</span>
-                    </div>
                   </div>
 
                   <div className="admin-kpi-card kpi-avg">
@@ -2508,10 +2516,10 @@ function App() {
                     </div>
                   </div>
                   <div className="admin-today-card">
-                    <div className="today-card-icon"><i className="fa-solid fa-receipt"></i></div>
+                    <div className="today-card-icon"><i className="fa-solid fa-users"></i></div>
                     <div className="today-card-info">
-                      <span className="today-card-value">₹{totalSubtotal.toLocaleString('en-IN')}</span>
-                      <span className="today-card-label">Net Revenue (Pre-GST)</span>
+                      <span className="today-card-value">{patientsList.length}</span>
+                      <span className="today-card-label">Total Patients</span>
                     </div>
                   </div>
                 </div>
@@ -2927,21 +2935,21 @@ function App() {
                     <div className="rev-card-icon"><i className="fa-solid fa-wallet"></i></div>
                     <div className="rev-card-info">
                       <span className="rev-card-value">₹{totalRevenue.toLocaleString('en-IN')}</span>
-                      <span className="rev-card-label">Total Revenue (incl. GST)</span>
+                      <span className="rev-card-label">Total Revenue</span>
                     </div>
                   </div>
                   <div className="admin-revenue-card rev-net">
-                    <div className="rev-card-icon"><i className="fa-solid fa-money-bill-trend-up"></i></div>
+                    <div className="rev-card-icon"><i className="fa-solid fa-calendar-check"></i></div>
                     <div className="rev-card-info">
-                      <span className="rev-card-value">₹{totalSubtotal.toLocaleString('en-IN')}</span>
-                      <span className="rev-card-label">Net Revenue (Pre-GST)</span>
+                      <span className="rev-card-value">{filteredBookings.length}</span>
+                      <span className="rev-card-label">Total Bookings</span>
                     </div>
                   </div>
                   <div className="admin-revenue-card rev-gst">
-                    <div className="rev-card-icon"><i className="fa-solid fa-building-columns"></i></div>
+                    <div className="rev-card-icon"><i className="fa-solid fa-chart-line"></i></div>
                     <div className="rev-card-info">
-                      <span className="rev-card-value">₹{totalGST.toLocaleString('en-IN')}</span>
-                      <span className="rev-card-label">Total GST Collected</span>
+                      <span className="rev-card-value">₹{avgRevenuePerBooking.toLocaleString('en-IN')}</span>
+                      <span className="rev-card-label">Average per Booking</span>
                     </div>
                   </div>
                 </div>
@@ -3127,9 +3135,7 @@ function App() {
                               <th>Date</th>
                               <th>Patient Details</th>
                               <th>Services Billed</th>
-                              <th>Subtotal</th>
-                              <th>GST</th>
-                              <th>Grand Total</th>
+                              <th>Total Amount</th>
                               <th>Payment</th>
                               <th>Referred By</th>
                               <th style={{ textAlign: 'center' }}>Actions</th>
@@ -3165,8 +3171,6 @@ function App() {
                                     ))}
                                   </div>
                                 </td>
-                                <td>₹{b.subtotal.toLocaleString('en-IN')}</td>
-                                <td>₹{b.gst.toLocaleString('en-IN')}</td>
                                 <td><strong className="admin-total-cell">₹{b.total.toLocaleString('en-IN')}</strong></td>
                                 <td>
                                   <span className={`admin-payment-badge mode-badge-${b.paymentMode.toLowerCase().replace(/\s+/g, '')}`}>
@@ -3273,14 +3277,6 @@ function App() {
 
                               <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 <div className="booking-card-info-row" style={{ fontSize: '0.8rem' }}>
-                                  <span className="info-label">Subtotal:</span>
-                                  <span className="info-value">₹{b.subtotal.toLocaleString('en-IN')}</span>
-                                </div>
-                                <div className="booking-card-info-row" style={{ fontSize: '0.8rem' }}>
-                                  <span className="info-label">GST (18%):</span>
-                                  <span className="info-value">₹{b.gst.toLocaleString('en-IN')}</span>
-                                </div>
-                                <div className="booking-card-info-row" style={{ fontSize: '0.8rem' }}>
                                   <span className="info-label">Referred By:</span>
                                   <span className="info-value">{b.referredBy || 'Self'}</span>
                                 </div>
@@ -3288,7 +3284,7 @@ function App() {
                             </div>
                             <div className="booking-card-footer" style={{ borderTop: '1px solid var(--border-color)', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(var(--primary-rgb), 0.01)' }}>
                               <div className="booking-card-total">
-                                <span className="total-label" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}>Grand Total:</span>
+                                <span className="total-label" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}>Total Amount:</span>
                                 <span className="total-amount" style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--primary)' }}>₹{b.total.toLocaleString('en-IN')}</span>
                               </div>
                               <button 
@@ -3385,9 +3381,8 @@ function App() {
                     </div>
                   </div>
                   <div className="invoice-license-block">
-                    <span className="invoice-tag-tax">TAX INVOICE</span>
+                    <span className="invoice-tag-tax">INVOICE</span>
                     <p className="invoice-license-item"><strong>Reg No:</strong> WB/JGP/CE/2026-9281</p>
-                    <p className="invoice-license-item"><strong>GSTIN:</strong> 19AABCB1234F1Z5</p>
                   </div>
                 </div>
 
@@ -3509,23 +3504,11 @@ function App() {
                     <table className="invoice-totals-table">
                       <tbody>
                         <tr>
-                          <th>Subtotal (Excl. Tax):</th>
+                          <th>Subtotal:</th>
                           <td>₹{activeInvoice.subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         </tr>
-                        <tr>
-                          <th>CGST (9.0%):</th>
-                          <td>₹{(activeInvoice.gst / 2).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                        </tr>
-                        <tr>
-                          <th>SGST (9.0%):</th>
-                          <td>₹{(activeInvoice.gst / 2).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                        </tr>
-                        <tr>
-                          <th>Round Off:</th>
-                          <td>₹0.00</td>
-                        </tr>
                         <tr className="grand-total-row">
-                          <th>Total Paid (Incl. GST):</th>
+                          <th>Total Paid:</th>
                           <td>₹{activeInvoice.total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         </tr>
                       </tbody>
