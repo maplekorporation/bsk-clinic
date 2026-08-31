@@ -1,7 +1,7 @@
 const en = {
   // Header / Navigation
   nav: {
-    clinicName: 'Bak o Shrobon Kendra',
+    clinicName: 'Baak o Shrobon Kendra',
     logoSub: 'Hearing, Nose & Speaking Centre',
     home: 'Home',
     about: 'About',
@@ -9,6 +9,7 @@ const en = {
     whyUs: 'Why Us',
     faq: 'FAQ',
     contact: 'Contact',
+    doctor: 'Doctor',
   },
 
   // Hero Section
@@ -38,13 +39,13 @@ const en = {
 
   // About Section
   about: {
-    badge: 'Welcome to Bak o Shrobon Kendra',
+    badge: 'Welcome to Baak o Shrobon Kendra',
     title: 'Restoring Connection, Enriching Lives Through Sound and Speech',
     story: [
-      'At Bak o Shrobon Kendra, we are committed to helping people of all ages hear better, speak clearly, and communicate with confidence. From children with speech and language delays to adults experiencing hearing or voice disorders, we provide personalized, evidence-based care tailored to each patient\'s needs.',
-      'Founded by Dr. Avijit Chowdhury, an experienced ENT Surgeon, Bak o Shrobon Kendra was established with the vision of making quality hearing and speech care accessible to families in the community. Guided by his expertise and commitment to patient care, our clinic combines medical excellence with compassionate rehabilitation to improve communication and quality of life.',
+      'At Baak o Shrobon Kendra, we are committed to helping people of all ages hear better, speak clearly, and communicate with confidence. From children with speech and language delays to adults experiencing hearing or voice disorders, we provide personalized, evidence-based care tailored to each patient\'s needs.',
+      'Founded by Dr. Avijit Chowdhury, an experienced ENT Surgeon, Baak o Shrobon Kendra was established with the vision of making quality hearing and speech care accessible to families in the community. Guided by his expertise and commitment to patient care, our clinic combines medical excellence with compassionate rehabilitation to improve communication and quality of life.',
       'We believe that early diagnosis, personalized therapy, and close collaboration with patients and families lead to the best outcomes. Every individual who walks through our doors is treated with empathy, respect, and dedicated attention.',
-      'At Bak o Shrobon Kendra, every voice matters, and every conversation begins with care.',
+      'At Baak o Shrobon Kendra, every voice matters, and every conversation begins with care.',
     ],
     experienceBadge: 'Years of',
     experienceBadge2: 'Excellence',
@@ -133,7 +134,7 @@ const en = {
 
   // Why Choose Us Section
   whyUs: {
-    badge: 'Why Bak o Shrobon Kendra',
+    badge: 'Why Baak o Shrobon Kendra',
     title: 'Delivering a New Standard in Clinical Experience',
     subtitle: 'We place high technology and patient empathy at the core of all clinical encounters.',
     card1Title: 'Latest Digital Equipment',
@@ -204,10 +205,12 @@ const en = {
 
   // Footer
   footer: {
-    aboutText: 'Setting the premium clinical benchmark for audiology, speech therapy, and otolaryngology care at Bak o Shrobon Kendra. Reconnect with sounds and words today.',
+    aboutText: 'Setting the premium clinical benchmark for audiology, speech therapy, and otolaryngology care at Baak o Shrobon Kendra. Reconnect with sounds and words today.',
     quickLinksTitle: 'Quick Links',
     linkHome: 'Home',
-    linkAbout: 'About Dr. Chowdhury',
+    linkAbout: 'About Us',
+    linkDoctor: 'Doctor Profile',
+    linkServices: 'Services',
     linkWhyUs: 'Why Choose Us',
     linkFaq: 'Frequently Asked Questions',
     linkContact: 'Contact Us',
@@ -223,8 +226,126 @@ const en = {
     newsletterTitle: 'Newsletter',
     newsletterText: "Subscribe to receive Dr. Chowdhury's hearing health guides and pediatric speech milestone tips.",
     newsletterPlaceholder: 'Your email address',
-    copyright: '© 2026 Bak o Shrobon Kendra. All Rights Reserved.',
+    copyright: '© 2026 Baak o Shrobon Kendra. All Rights Reserved.',
     adminLink: 'Admin',
+  },
+
+  // Doctor Profile Section
+  doctorProfile: {
+    sectionBadge: 'Meet Our Specialist',
+    sectionTitle: 'Dedicated ENT Care & Surgical Excellence',
+    sectionSubtitle: 'Over a decade of dedicated clinical practice, advanced microscopic & endoscopic surgeries, and comprehensive hearing rehabilitation.',
+    doctorName: 'Dr. Avijit Choudhury',
+    doctorDesignation: 'MS (ENT) | Consultant Otorhinolaryngologist & Head-Neck Surgeon',
+    regNo: 'WBMC Reg. No. 60117',
+    experienceBadge: '10+ Years Experience',
+    govtPost: 'Specialist Medical Officer (ENT)',
+    founderPost: 'Founder & Clinical Director',
+    highlights: [
+      { title: 'Medical College Kolkata', desc: 'MS (ENT) Residency Training' },
+      { title: 'Govt. of West Bengal', desc: 'Dept. of Health & Family Welfare' },
+      { title: 'Advanced Microsurgery', desc: 'Ear, Sinus & Micro-Laryngeal' },
+    ],
+    profileSummary: 'Accomplished Otorhinolaryngologist (ENT Specialist) with over a decade of postgraduate clinical and surgical experience. Currently serving as a Specialist Medical Officer with the Department of Health & Family Welfare, Government of West Bengal, and Founder/Director of Baak O Shrobon Speech and Hearing Clinic. Trained at the premier Medical College Kolkata, specializing in advanced microscopic and endoscopic surgical techniques, comprehensive hearing rehabilitation, and sleep apnea management.',
+    
+    educationTitle: 'Education & Qualifications',
+    education: [
+      {
+        degree: 'MS in Otorhinolaryngology (ENT)',
+        institution: 'Medical College Kolkata',
+        university: 'West Bengal University of Health Sciences (WBUHS)',
+        year: '2013 – 2016',
+      },
+      {
+        degree: 'MBBS',
+        institution: 'Calcutta National Medical College',
+        university: 'West Bengal University of Health Sciences (WBUHS)',
+        year: '2003',
+      },
+    ],
+
+    experienceTitle: 'Professional Experience',
+    experience: [
+      {
+        role: 'Specialist Medical Officer (ENT)',
+        organization: 'Department of Health & Family Welfare, Government of West Bengal',
+        location: 'Jangipur, Murshidabad',
+        period: '2016 – Present',
+        highlights: [
+          'Manage high-volume outpatient (OPD) and inpatient (IPD) clinical care within the state public healthcare setup.',
+          'Perform routine, complex, and emergency surgical procedures utilizing modern microscopic and endoscopic approaches.',
+          'Lead emergency otolaryngological interventions including acute airway management, tracheostomies, severe epistaxis control, and foreign body extractions.',
+          'Implement state health welfare programs and oversee administrative operations within the hospital ENT department.'
+        ],
+      },
+      {
+        role: 'Founder & Clinical Director',
+        organization: 'Baak O Shrobon Speech and Hearing Clinic',
+        location: 'Jangipur, Murshidabad',
+        period: '2026 – Present',
+        highlights: [
+          'Established a state-of-the-art specialized ENT and Audiology center providing all-in-one diagnostic and therapeutic services at accessible, low costs.',
+          'Direct comprehensive hearing care services including diagnostic audiometry, screening, fitting, dispensing, and servicing/repair of all types of modern hearing aids.',
+          'Oversee diagnostic evaluation, testing, and therapeutic management for Sleep Apnea and sleep-disordered breathing.',
+          'Maintain strict standards of professional accuracy, patient safety, and high-quality care across all clinical investigations.'
+        ],
+      },
+      {
+        role: 'Postgraduate Resident Trainee (MS ENT)',
+        organization: 'Medical College Kolkata',
+        location: 'Kolkata, West Bengal',
+        period: '2013 – 2016',
+        highlights: [
+          'Three years of intensive hands-on surgical and clinical residency covering otology, rhinology, laryngology, and head-neck trauma',
+        ],
+      },
+    ],
+
+    specialtiesTitle: 'Clinical & Surgical Interests',
+    specialties: [
+      {
+        icon: 'fa-ear-listen',
+        title: 'Microscopic Ear Surgery',
+        items: 'Tympanoplasty, Mastoidectomy, Stapedotomy, Ossiculoplasty',
+      },
+      {
+        icon: 'fa-lungs',
+        title: 'Endoscopic Sinus & Nasal Surgery',
+        items: 'FESS, Endoscopic DCR, Septoplasty',
+      },
+      {
+        icon: 'fa-head-side-cough',
+        title: 'Laryngeal & Head-Neck Surgery',
+        items: 'Micro-Laryngeal Surgeries (MLS), Tonsillectomy, Adenoidectomy',
+      },
+      {
+        icon: 'fa-bed-pulse',
+        title: 'Audiology & Sleep Medicine',
+        items: 'Hearing screening, hearing aid fitting/servicing, Sleep Apnea evaluation & treatment',
+      },
+    ],
+
+    competenciesTitle: 'Core Competencies',
+    competencies: [
+      'Rigid Nasal Endoscopy',
+      'Video Laryngoscopy',
+      'Micro-Otoscopy',
+      'Minimally Invasive Sinus Surgery',
+      'Microscopic Middle-Ear Procedures',
+      'Emergency Tracheostomy',
+      'Airway Stabilization',
+      'Foreign Body Extraction',
+      'Clinical Administration',
+      'Patient Counseling',
+    ],
+
+    languagesTitle: 'Languages Spoken',
+    languages: [
+      { name: 'Bengali', level: 'Native' },
+      { name: 'English', level: 'Professional' },
+      { name: 'Hindi', level: 'Fluent' },
+      { name: 'Nepali', level: 'Conversational' },
+    ],
   },
 };
 

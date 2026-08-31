@@ -1,8 +1,12 @@
 import { render, screen } from '@testing-library/react';
 import App from './App';
 
-test('renders learn react link', () => {
+test('renders clinic branding and doctor profile', () => {
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+  const clinicElements = screen.getAllByText(/Baak o Shrobon Kendra/i);
+  expect(clinicElements.length).toBeGreaterThan(0);
+
+  const doctorNameElements = screen.getAllByText(/Dr. Avijit Choudhury/i);
+  expect(doctorNameElements.length).toBeGreaterThan(0);
 });
+

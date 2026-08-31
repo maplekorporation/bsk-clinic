@@ -1,6 +1,6 @@
 # BSK Clinic Frontend
 
-Frontend web application for **Bak o Shrobon Kendra** - Hearing, Nose and Speaking Centre. This application provides the user interface for clinic management, including patient registration, booking management, service catalog viewing, and dashboard analytics.
+Frontend web application for **Baak o Shrobon Kendra** - Hearing, Nose and Speaking Centre. This application provides the user interface for clinic management, including patient registration, booking management, service catalog viewing, and dashboard analytics.
 
 ## Tech Stack
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { db } from './services/db';
 import en from './locales/en';
 import bn from './locales/bn';
+import ServiceMultiSelect from './components/ServiceMultiSelect';
 
 // Simple hash-based router
 function useHashRoute() {
@@ -225,7 +226,7 @@ function App() {
     document.documentElement.lang = language === 'bn' ? 'bn' : 'en';
     document.title = language === 'bn'
       ? 'বাক ও শ্রবণ কেন্দ্র | হিয়ারিং টেস্ট, স্পিচ থেরাপি এবং ইএনটি বিশেষজ্ঞ'
-      : 'Bak o Shrobon Kendra | Hearing Test, Speech Therapy & ENT Specialist';
+      : 'Baak o Shrobon Kendra | Hearing Test, Speech Therapy & ENT Specialist';
   }, [language]);
 
   const toggleLanguage = () => {
@@ -341,7 +342,7 @@ function App() {
         if (entry.isIntersecting && !countersStarted) {
           setCountersStarted(true);
           animateVal('happyPatients', 5000, 2000, '+');
-          animateVal('yearsExperience', 20, 2000, '+');
+          animateVal('yearsExperience', 10, 1000, '+');
           animateVal('satisfaction', 98, 2000, '%');
           animateVal('supportHours', 24, 2000, '');
         }
@@ -386,23 +387,6 @@ function App() {
 
   const faqData = t.faq.items;
 
-  // ==========================================
-  // 8. Newsletter Submission Mimic
-  // ==========================================
-  const [newsletterEmail, setNewsletterEmail] = useState('');
-  const [newsletterError, setNewsletterError] = useState(false);
-
-  const handleNewsletterSubmit = (e) => {
-    e.preventDefault();
-    const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-    if (re.test(String(newsletterEmail).toLowerCase())) {
-      alert(`Email subscribed successfully! Thank you for joining Bak o Shrobon Kendra newsletter.`);
-      setNewsletterEmail('');
-      setNewsletterError(false);
-    } else {
-      setNewsletterError(true);
-    }
-  };
 
   // ==========================================
   // 9. Receptionist Booking Portal State & Handlers
@@ -671,9 +655,9 @@ function App() {
       <header id="header" className={scrolled ? 'scrolled' : ''}>
         <div className="nav-container">
           <div className="container">
-            <a href="#home" onClick={() => { setView('landing'); }} className="logo" aria-label="Bak o Shrobon Kendra Home">
+            <a href="#home" onClick={() => { setView('landing'); }} className="logo" aria-label="Baak o Shrobon Kendra Home">
               <div className="logo-img-wrapper">
-                <img src="logo.png" alt="Bak o Shrobon Kendra Logo" className="logo-img" />
+                <img src="logo.png" alt="Baak o Shrobon Kendra Logo" className="logo-img" />
               </div>
               <div className="logo-divider"></div>
               <div className="logo-text">
@@ -686,6 +670,7 @@ function App() {
               <nav className={`nav-menu ${mobileMenuOpen ? 'active' : ''}`} id="nav-menu" role="navigation" aria-label="Main Navigation">
                 <a href="#home" className={`nav-link ${activeSection === 'home' ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}>{t.nav.home}</a>
                 <a href="#about" className={`nav-link ${activeSection === 'about' ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}>{t.nav.about}</a>
+                <a href="#doctor" className={`nav-link ${activeSection === 'doctor' ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}>{t.nav.doctor}</a>
                 <a href="#services" className={`nav-link ${activeSection === 'services' ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}>{t.nav.services}</a>
                 <a href="#why-choose-us" className={`nav-link ${activeSection === 'why-choose-us' ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}>{t.nav.whyUs}</a>
                 <a href="#faq" className={`nav-link ${activeSection === 'faq' ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}>{t.nav.faq}</a>
@@ -789,13 +774,13 @@ function App() {
               {t.hero.subtitle}
             </p>
             <div className="hero-actions">
-              <a href="tel:+919000123456" className="btn btn-secondary">{t.hero.callNow} <i className="fa-solid fa-phone" aria-hidden="true"></i></a>
+              <a href="tel:+919674163040" className="btn btn-secondary">{t.hero.callNow} <i className="fa-solid fa-phone" aria-hidden="true"></i></a>
             </div>
           </div>
           
           <div className="hero-image-container reveal reveal-scale-in active">
             <div className="hero-image-wrapper">
-              <img src="dr_avijit_chowdhury.png" alt="Dr. Avijit Chowdhury - Chief Otolaryngologist at Bak o Shrobon Kendra" loading="eager" />
+              <img src="dr_avijit_chowdhury.png" alt="Dr. Avijit Chowdhury - Chief Otolaryngologist at Baak o Shrobon Kendra" loading="eager" />
             </div>
             
             <div className="hero-floating-card hero-floating-card-1">
@@ -820,7 +805,7 @@ function App() {
               <div className="stat-label">{t.stats.happyPatients}</div>
             </div>
             <div className="stat-item">
-              <div className="stat-number" data-target="20">{translateDigits(stats.yearsExperience)}</div>
+              <div className="stat-number" data-target="10">{translateDigits(stats.yearsExperience)}</div>
               <div className="stat-label">{t.stats.yearsExperience}</div>
             </div>
             <div className="stat-item">
@@ -840,13 +825,13 @@ function App() {
         <div className="container about-grid">
           <div className="about-images reveal reveal-fade-left">
             <div className="about-img-box about-img-box-1">
-              <img src="speech_therapy.png" alt="Dr. Avijit Chowdhury and speech therapist consulting a patient at Bak o Shrobon Kendra" />
+              <img src="speech_therapy.png" alt="Dr. Avijit Chowdhury and speech therapist consulting a patient at Baak o Shrobon Kendra" />
             </div>
             <div className="about-img-box about-img-box-2">
               <img src="hearing_test.png" alt="Modern audiometry equipment and hearing test session in progress" />
             </div>
             <div className="about-experience-badge">
-              <span>{translateDigits('20+')}</span>
+              <span>{translateDigits('10+')}</span>
               <p>{t.about.experienceBadge}<br />{t.about.experienceBadge2}</p>
             </div>
           </div>
@@ -886,6 +871,179 @@ function App() {
               </div>
               <div className="highlight-item">
                 <i className="fa-solid fa-check" aria-hidden="true"></i> {t.about.highlight4}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 6b. Doctor Profile Section */}
+      <section id="doctor">
+        <div className="container">
+          <div className="section-header reveal reveal-fade-up">
+            <span className="section-badge">{t.doctorProfile.sectionBadge}</span>
+            <h2 className="section-title">{t.doctorProfile.sectionTitle}</h2>
+            <p className="section-subtitle">{t.doctorProfile.sectionSubtitle}</p>
+          </div>
+
+          <div className="doctor-profile-container">
+            {/* 1. Main Doctor Hero Card (Full Width) */}
+            <div className="doctor-hero-card reveal reveal-fade-up">
+              <div className="doctor-hero-left">
+                <div className="doctor-photo-wrapper">
+                  <img src="dr_avijit_chowdhury.png" alt="Dr. Avijit Choudhury - MS (ENT)" loading="lazy" />
+                  <span className="doctor-experience-tag">
+                    <i className="fa-solid fa-award" aria-hidden="true"></i> {t.doctorProfile.experienceBadge}
+                  </span>
+                </div>
+                <div className="doctor-quick-meta">
+                  <span className="doctor-reg-badge">
+                    <i className="fa-solid fa-id-card" aria-hidden="true"></i> {t.doctorProfile.regNo}
+                  </span>
+                </div>
+                <div className="doctor-hero-languages">
+                  <h4><i className="fa-solid fa-language" aria-hidden="true"></i> {t.doctorProfile.languagesTitle}</h4>
+                  <div className="doctor-lang-pills">
+                    {t.doctorProfile.languages.map((lang, idx) => (
+                      <span key={idx} className="doctor-lang-pill">
+                        {lang.name}
+                        <span className="doctor-lang-level">{lang.level}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="doctor-hero-right">
+                <div className="doctor-hero-header">
+                  <div className="doctor-hero-badge-row">
+                    <span className="doctor-pill-badge primary">
+                      <i className="fa-solid fa-user-doctor" aria-hidden="true"></i> {t.doctorProfile.govtPost}
+                    </span>
+                    <span className="doctor-pill-badge secondary">
+                      <i className="fa-solid fa-hospital" aria-hidden="true"></i> {t.doctorProfile.founderPost}
+                    </span>
+                  </div>
+                  <h3 className="doctor-hero-name">{t.doctorProfile.doctorName}</h3>
+                  <p className="doctor-hero-designation">{t.doctorProfile.doctorDesignation}</p>
+                </div>
+
+                <div className="doctor-summary-box">
+                  <i className="fa-solid fa-quote-left doctor-quote-icon" aria-hidden="true"></i>
+                  <p>{t.doctorProfile.profileSummary}</p>
+                </div>
+
+                {/* Key Quick Highlights */}
+                {t.doctorProfile.highlights && (
+                  <div className="doctor-highlights-row">
+                    <div className="doctor-highlight-box">
+                      <i className="fa-solid fa-building-columns" aria-hidden="true"></i>
+                      <div>
+                        <strong>{t.doctorProfile.highlights[0]?.title}</strong>
+                        <span>{t.doctorProfile.highlights[0]?.desc}</span>
+                      </div>
+                    </div>
+                    <div className="doctor-highlight-box">
+                      <i className="fa-solid fa-hand-holding-medical" aria-hidden="true"></i>
+                      <div>
+                        <strong>{t.doctorProfile.highlights[1]?.title}</strong>
+                        <span>{t.doctorProfile.highlights[1]?.desc}</span>
+                      </div>
+                    </div>
+                    <div className="doctor-highlight-box">
+                      <i className="fa-solid fa-microscope" aria-hidden="true"></i>
+                      <div>
+                        <strong>{t.doctorProfile.highlights[2]?.title}</strong>
+                        <span>{t.doctorProfile.highlights[2]?.desc}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 2. Clinical & Surgical Interests (Full Width Grid) */}
+            <div className="doctor-section-block reveal reveal-fade-up">
+              <h3 className="doctor-subsection-title">
+                <i className="fa-solid fa-stethoscope" aria-hidden="true"></i> {t.doctorProfile.specialtiesTitle}
+              </h3>
+              <div className="doctor-specialties-grid">
+                {t.doctorProfile.specialties.map((spec, idx) => (
+                  <div key={idx} className="doctor-specialty-card">
+                    <div className="doctor-specialty-icon">
+                      <i className={`fa-solid ${spec.icon}`} aria-hidden="true"></i>
+                    </div>
+                    <h4>{spec.title}</h4>
+                    <p>{spec.items}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 3. Dual-Column Row: Professional Experience & Education/Competencies */}
+            <div className="doctor-dual-grid">
+              {/* Left Column: Experience Timeline */}
+              <div className="doctor-grid-col-left reveal reveal-fade-right">
+                <div className="doctor-section-block">
+                  <h3 className="doctor-subsection-title">
+                    <i className="fa-solid fa-briefcase-medical" aria-hidden="true"></i> {t.doctorProfile.experienceTitle}
+                  </h3>
+                  <div className="doctor-timeline">
+                    {t.doctorProfile.experience.map((exp, idx) => (
+                      <div key={idx} className="doctor-timeline-item">
+                        <div className="doctor-timeline-marker">
+                          <div className="doctor-timeline-dot"></div>
+                          {idx < t.doctorProfile.experience.length - 1 && <div className="doctor-timeline-line"></div>}
+                        </div>
+                        <div className="doctor-timeline-content">
+                          <div className="doctor-timeline-header">
+                            <span className="doctor-timeline-period">{exp.period}</span>
+                            <h4>{exp.role}</h4>
+                            <p className="doctor-timeline-org">{exp.organization}</p>
+                            <p className="doctor-timeline-location"><i className="fa-solid fa-location-dot" aria-hidden="true"></i> {exp.location}</p>
+                          </div>
+                          <ul className="doctor-timeline-highlights">
+                            {exp.highlights.map((h, hIdx) => (
+                              <li key={hIdx}>{h}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Education & Core Competencies */}
+              <div className="doctor-grid-col-right reveal reveal-fade-left">
+                {/* Education */}
+                <div className="doctor-section-block">
+                  <h3 className="doctor-subsection-title">
+                    <i className="fa-solid fa-graduation-cap" aria-hidden="true"></i> {t.doctorProfile.educationTitle}
+                  </h3>
+                  <div className="doctor-education-cards">
+                    {t.doctorProfile.education.map((edu, idx) => (
+                      <div key={idx} className="doctor-education-card">
+                        <div className="doctor-edu-year">{edu.year}</div>
+                        <h4>{edu.degree}</h4>
+                        <p className="doctor-edu-institution">{edu.institution}</p>
+                        <p className="doctor-edu-university">{edu.university}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Core Competencies */}
+                <div className="doctor-section-block doctor-competencies-block">
+                  <h3 className="doctor-subsection-title">
+                    <i className="fa-solid fa-award" aria-hidden="true"></i> {t.doctorProfile.competenciesTitle}
+                  </h3>
+                  <div className="doctor-competencies-cloud">
+                    {t.doctorProfile.competencies.map((comp, idx) => (
+                      <span key={idx} className="doctor-competency-tag">{comp}</span>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1062,7 +1220,7 @@ function App() {
                 <div className="info-box-icon"><i className="fa-solid fa-headset" aria-hidden="true"></i></div>
                 <div className="info-box-details">
                   <h4>{t.contact.quickContactTitle}</h4>
-                  <p><strong>{t.contact.phoneLabel}</strong> <a href="tel:+919000123456">+91 90001 23456</a><br /><strong>{t.contact.emailLabel}</strong> <a href="mailto:care@bakoshrobonkendra.com">care@bakoshrobonkendra.com</a></p>
+                  <p><strong>{t.contact.phoneLabel}</strong> <a href="tel:+919674163040">+91 9674163040</a><br /><strong>{t.contact.emailLabel}</strong> <a href="mailto:avijitchoudhuryent79@gmail.com">avijitchoudhuryent79@gmail.com</a></p>
                 </div>
               </div>
             </div>
@@ -1074,7 +1232,7 @@ function App() {
                   allowFullScreen
                   loading="lazy" 
                   referrerPolicy="no-referrer-when-downgrade" 
-                  title="Bak o Shrobon Kendra Location Map"
+                  title="Baak o Shrobon Kendra Location Map"
                 ></iframe>
               </div>
             </div>
@@ -1087,7 +1245,7 @@ function App() {
         <div className="container footer-grid">
           <div className="footer-col-about">
             <a href="#home" className="logo" style={{ marginBottom: '20px' }}>
-              <img src="logo.png" alt="Bak o Shrobon Kendra - Hearing, Nose & Speaking Centre" className="logo-img footer-logo-img" />
+              <img src="logo.png" alt="Baak o Shrobon Kendra - Hearing, Nose & Speaking Centre" className="logo-img footer-logo-img" />
             </a>
             <p>{t.footer.aboutText}</p>
           </div>
@@ -1097,6 +1255,8 @@ function App() {
             <div className="footer-links">
               <a href="#home">{t.footer.linkHome}</a>
               <a href="#about">{t.footer.linkAbout}</a>
+              <a href="#doctor">{t.footer.linkDoctor}</a>
+              <a href="#services">{t.footer.linkServices}</a>
               <a href="#why-choose-us">{t.footer.linkWhyUs}</a>
               <a href="#faq">{t.footer.linkFaq}</a>
               <a href="#contact">{t.footer.linkContact}</a>
@@ -1116,31 +1276,10 @@ function App() {
               <a href="#services">{t.footer.servicePsych}</a>
             </div>
           </div>
-          
-          <div className="footer-col-newsletter">
-            <h4 className="footer-col-title">{t.footer.newsletterTitle}</h4>
-            <p>{t.footer.newsletterText}</p>
-            <form className="newsletter-form" onSubmit={handleNewsletterSubmit}>
-              <input 
-                type="email" 
-                className="newsletter-input" 
-                placeholder={t.footer.newsletterPlaceholder} 
-                aria-label="Email address for newsletter" 
-                value={newsletterEmail}
-                onChange={(e) => setNewsletterEmail(e.target.value)}
-                style={{ borderColor: newsletterError ? 'red' : '' }}
-                required 
-              />
-              <button type="submit" className="newsletter-btn" aria-label="Subscribe to newsletter"><i className="fa-solid fa-paper-plane"></i></button>
-            </form>
-          </div>
         </div>
         
         <div className="container footer-bottom">
           <p>{t.footer.copyright}</p>
-          <a href="#/admin-login" className="footer-admin-link" title="Admin Portal">
-            <i className="fa-solid fa-lock"></i> {t.footer.adminLink}
-          </a>
         </div>
       </footer>
         </>
@@ -1157,7 +1296,7 @@ function App() {
           <div className="login-card">
             <div className="login-header">
               <div className="login-logo-wrapper">
-                <img src="logo.png" alt="Bak o Shrobon Kendra" className="login-logo-img" />
+                <img src="logo.png" alt="Baak o Shrobon Kendra" className="login-logo-img" />
               </div>
               <h2>Receptionist Portal</h2>
               <p>Sign in to access the booking system</p>
@@ -1557,62 +1696,13 @@ function App() {
                     Select the required diagnostics or therapy sessions. Multiple services can be selected.
                   </p>
                   
-                  <div className="services-catalog-grid">
-                    {catalogServices.map(srv => {
-                      const isSelected = selectedServices.some(s => s.id === srv.id);
-                      const selectedSrv = selectedServices.find(s => s.id === srv.id);
-                      return (
-                        <div 
-                          key={srv.id} 
-                          className={`service-selection-card ${isSelected ? 'selected' : ''}`}
-                          onClick={() => handleToggleService(srv)}
-                          role="button"
-                          tabIndex={0}
-                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleToggleService(srv); }}
-                        >
-                          <input 
-                            type="checkbox" 
-                            className="service-selection-checkbox"
-                            checked={isSelected}
-                            readOnly
-                          />
-                          <div className="service-selection-info">
-                            <span className="service-selection-category">{srv.category}</span>
-                            <div className="service-selection-name">{srv.name}</div>
-                            
-                            {isSelected ? (
-                              <div 
-                                className="service-price-edit-row" 
-                                onClick={(e) => e.stopPropagation()}
-                                onMouseDown={(e) => e.stopPropagation()}
-                                onTouchStart={(e) => e.stopPropagation()}
-                              >
-                                <div className="service-price-input-group">
-                                  <span className="service-price-currency">₹</span>
-                                  <input 
-                                    type="number"
-                                    className="service-price-input"
-                                    value={selectedSrv?.customPrice ?? srv.price}
-                                    onChange={(e) => handleServicePriceChange(srv.id, parseFloat(e.target.value) || 0)}
-                                    onFocus={(e) => e.target.select()}
-                                    min="0"
-                                    step="50"
-                                  />
-                                </div>
-                                {(selectedSrv?.customPrice ?? srv.price) !== srv.price && (
-                                  <span className="service-price-original">
-                                    Catalog: ₹{srv.price.toLocaleString('en-IN')}
-                                  </span>
-                                )}
-                              </div>
-                            ) : (
-                              <div className="service-selection-price">₹{srv.price.toLocaleString('en-IN')}</div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <ServiceMultiSelect
+                    catalogServices={catalogServices}
+                    selectedServices={selectedServices}
+                    onToggleService={handleToggleService}
+                    onPriceChange={handleServicePriceChange}
+                    onClearAll={() => setSelectedServices([])}
+                  />
                 </div>
 
                 {/* Step 4: Referral & Payment */}
@@ -3368,7 +3458,7 @@ function App() {
                 {/* Clinical Header / Letterhead */}
                 <div className="invoice-preview-header">
                   <div className="invoice-logo-title-group">
-                    <img src="logo.png" alt="Bak o Shrobon Kendra Logo" className="invoice-logo-img" />
+                    <img src="logo.png" alt="Baak o Shrobon Kendra Logo" className="invoice-logo-img" />
                     <div className="invoice-clinic-info-block">
                       <h2 className="invoice-clinic-title">{t.nav.clinicName}</h2>
                       <p className="invoice-clinic-subtitle">{t.nav.logoSub}</p>
@@ -3376,7 +3466,7 @@ function App() {
                         Jangipur, Murshidabad, West Bengal - 742223
                       </p>
                       <p className="invoice-clinic-contact-text">
-                        Ph: +91 90001 23456 | Email: care@bakoshrobonkendra.com
+                        Ph: +91 9674163040 | Email: avijitchoudhuryent79@gmail.com
                       </p>
                     </div>
                   </div>
@@ -3572,10 +3662,10 @@ function App() {
           >
             <i className="fa-solid fa-arrow-up"></i>
           </button>
-          <a href="tel:+919000123456" className="floating-btn floating-btn-call" aria-label="Call Bak o Shrobon Kendra Support">
+          <a href="tel:+919674163040" className="floating-btn floating-btn-call" aria-label="Call Baak o Shrobon Kendra Support">
             <i className="fa-solid fa-phone"></i>
           </a>
-          <a href="https://wa.me/919000123456" className="floating-btn floating-btn-whatsapp" target="_blank" rel="noopener noreferrer" aria-label="Chat with us on WhatsApp">
+          <a href="https://wa.me/919674163040" className="floating-btn floating-btn-whatsapp" target="_blank" rel="noopener noreferrer" aria-label="Chat with us on WhatsApp">
             <i className="fa-brands fa-whatsapp"></i>
           </a>
         </div>
