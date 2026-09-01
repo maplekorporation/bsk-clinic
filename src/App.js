@@ -306,72 +306,6 @@ function App() {
   }, [loaderVisible, view]);
 
   // ==========================================
-  // 6. Stat Counters Animation
-  // ==========================================
-  const statsRef = useRef(null);
-  const [countersStarted, setCountersStarted] = useState(false);
-  const [stats, setStats] = useState({
-    happyPatients: '0',
-    yearsExperience: '0',
-    satisfaction: '0',
-    supportHours: '0'
-  });
-
-  const animateVal = (key, target, duration, suffix) => {
-    let start = 0;
-    const stepTime = Math.abs(Math.floor(duration / target));
-    const increment = target > 100 ? Math.ceil(target / 100) : 1;
-
-    const timer = setInterval(() => {
-      start += increment;
-      if (start >= target) {
-        setStats(prev => ({ ...prev, [key]: `${target}${suffix}` }));
-        clearInterval(timer);
-      } else {
-        setStats(prev => ({ ...prev, [key]: `${start}` }));
-      }
-    }, Math.max(stepTime, 20));
-  };
-
-  useEffect(() => {
-    const currentStatsRef = statsRef.current;
-    if (!currentStatsRef) return;
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting && !countersStarted) {
-          setCountersStarted(true);
-          animateVal('happyPatients', 5000, 2000, '+');
-          animateVal('yearsExperience', 10, 1000, '+');
-          animateVal('satisfaction', 98, 2000, '%');
-          animateVal('supportHours', 24, 2000, '');
-        }
-      });
-    }, { threshold: 0.3 });
-
-    observer.observe(currentStatsRef);
-
-    return () => {
-      if (currentStatsRef) {
-        observer.unobserve(currentStatsRef);
-      }
-    };
-  }, [countersStarted, view]);
-
-  // Reset counters when navigating away from the landing page
-  useEffect(() => {
-    if (view !== 'landing') {
-      setCountersStarted(false);
-      setStats({
-        happyPatients: '0',
-        yearsExperience: '0',
-        satisfaction: '0',
-        supportHours: '0'
-      });
-    }
-  }, [view]);
-
-  // ==========================================
   // 7. FAQ Accordion
   // ==========================================
   const [activeFaq, setActiveFaq] = useState(null);
@@ -791,30 +725,6 @@ function App() {
                 <h4>{t.hero.doctorName}</h4>
                 <p>{t.hero.doctorTitle}</p>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 5. Floating Stats Section */}
-      <section className="stats" ref={statsRef}>
-        <div className="container">
-          <div className="stats-grid reveal reveal-fade-up">
-            <div className="stat-item">
-              <div className="stat-number" data-target="5000">{translateDigits(stats.happyPatients)}</div>
-              <div className="stat-label">{t.stats.happyPatients}</div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-number" data-target="10">{translateDigits(stats.yearsExperience)}</div>
-              <div className="stat-label">{t.stats.yearsExperience}</div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-number" data-target="98">{translateDigits(stats.satisfaction)}</div>
-              <div className="stat-label">{t.stats.satisfaction}</div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-number" data-target="24">{translateDigits(stats.supportHours)}</div>
-              <div className="stat-label">{t.stats.supportHours}</div>
             </div>
           </div>
         </div>
