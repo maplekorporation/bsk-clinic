@@ -104,7 +104,12 @@ function App() {
   const [showAdminPassword, setShowAdminPassword] = useState(false);
   const [adminTab, setAdminTab] = useState('overview');
   const [patientGenderFilter, setPatientGenderFilter] = useState('All');
-  const [adminPeriodFilter, setAdminPeriodFilter] = useState('all');
+  const [adminPeriodFilter, setAdminPeriodFilter] = useState('today');
+  const [overviewBookingIdSearch, setOverviewBookingIdSearch] = useState('');
+
+  useEffect(() => {
+    setOverviewBookingsPage(1);
+  }, [adminPeriodFilter, overviewBookingIdSearch]);
 
   // Redirect to login if not authenticated, or to dashboard if already authenticated
   useEffect(() => {
@@ -331,6 +336,7 @@ function App() {
   const [bookingsList, setBookingsList] = useState([]);
   const [adminBookingsPage, setAdminBookingsPage] = useState(1);
   const [portalBookingsPage, setPortalBookingsPage] = useState(1);
+  const [overviewBookingsPage, setOverviewBookingsPage] = useState(1);
 
   const sortedBookings = useMemo(() => {
     return [...bookingsList].sort((a, b) => {
@@ -2204,9 +2210,6 @@ function App() {
             return b.date === todayStr;
           }
           const bDate = parseLocalDate(b.date);
-          if (adminPeriodFilter === 'week') {
-            return bDate >= mondayOfCurrentWeek && bDate <= sundayOfCurrentWeek;
-          }
           if (adminPeriodFilter === 'month') {
             return bDate.getFullYear() === currentYear && bDate.getMonth() === currentMonth;
           }
@@ -2224,6 +2227,18 @@ function App() {
         const todayBookings = bookingsList.filter(b => b.date === todayStr);
         const todayBookingsCount = todayBookings.length;
         const todayRevenue = todayBookings.reduce((acc, b) => acc + b.total, 0);
+        const todayAvgBill = todayBookingsCount > 0 ? Math.round(todayRevenue / todayBookingsCount) : 0;
+        
+        const todayServicesMap = {};
+        let todayTotalServicesCount = 0;
+        todayBookings.forEach(b => {
+          (b.services || []).forEach(s => {
+            todayServicesMap[s.name] = (todayServicesMap[s.name] || 0) + 1;
+            todayTotalServicesCount++;
+          });
+        });
+        const todayTopServices = Object.entries(todayServicesMap).sort((a, b) => b[1] - a[1]);
+        const maxTodayServiceCount = todayTopServices.length > 0 ? todayTopServices[0][1] : 1;
         
         const maleCount = patientsList.filter(p => p.gender === 'Male').length;
         const femaleCount = patientsList.filter(p => p.gender === 'Female').length;
@@ -2351,6 +2366,23 @@ function App() {
         });
         const maxMonthlyRevenue = Math.max(...monthlyRevenueTrend.map(m => m.revenue), 1);
 
+        // 6. Daily bookings for current month (day 1..N)
+        const daysInCurrentMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+        const dailyMonthBookings = Array.from({ length: daysInCurrentMonth }, (_, i) => ({
+          day: i + 1,
+          bookings: 0,
+          revenue: 0
+        }));
+        filteredBookings.forEach(b => {
+          if (adminPeriodFilter === 'month') {
+            const bDate = parseLocalDate(b.date);
+            const dayOfMonth = bDate.getDate();
+            dailyMonthBookings[dayOfMonth - 1].bookings += 1;
+            dailyMonthBookings[dayOfMonth - 1].revenue += b.total;
+          }
+        });
+        const maxDailyMonthBookings = Math.max(...dailyMonthBookings.map(d => d.bookings), 1);
+
         // Admin search state for patients & bookings
         const getInitials = (name) => {
           const parts = name.split(' ');
@@ -2396,13 +2428,6 @@ function App() {
                 <i className="fa-solid fa-indian-rupee-sign"></i>
                 <span>Revenue</span>
               </button>
-              <button 
-                className={`admin-tab-btn ${adminTab === 'bookings' ? 'active' : ''}`}
-                onClick={() => setAdminTab('bookings')}
-              >
-                <i className="fa-solid fa-calendar-check"></i>
-                <span>Bookings</span>
-              </button>
             </div>
 
             <div className="admin-sidebar-footer">
@@ -2417,14 +2442,6 @@ function App() {
                   </span>
                 </div>
               </div>
-              <button 
-                className="admin-exit-btn"
-                title="Exit Admin"
-                onClick={handleAdminLogout}
-              >
-                <i className="fa-solid fa-right-from-bracket"></i>
-                <span>Exit Dashboard</span>
-              </button>
             </div>
           </aside>
 
@@ -2446,28 +2463,13 @@ function App() {
                 <div className="admin-period-selector-row">
                   <div className="admin-period-selector">
                     <button className={`period-btn ${adminPeriodFilter === 'today' ? 'active' : ''}`} onClick={() => setAdminPeriodFilter('today')}>Today</button>
-                    <button className={`period-btn ${adminPeriodFilter === 'week' ? 'active' : ''}`} onClick={() => setAdminPeriodFilter('week')}>This Week</button>
                     <button className={`period-btn ${adminPeriodFilter === 'month' ? 'active' : ''}`} onClick={() => setAdminPeriodFilter('month')}>This Month</button>
                     <button className={`period-btn ${adminPeriodFilter === 'year' ? 'active' : ''}`} onClick={() => setAdminPeriodFilter('year')}>This Year</button>
-                    <button className={`period-btn ${adminPeriodFilter === 'all' ? 'active' : ''}`} onClick={() => setAdminPeriodFilter('all')}>All Time</button>
                   </div>
                 </div>
 
                 {/* KPI Row 1 - Primary Stats */}
                 <div className="admin-kpi-grid">
-                  <div className="admin-kpi-card kpi-patients">
-                    <div className="kpi-icon-bg"><i className="fa-solid fa-users"></i></div>
-                    <div className="kpi-content">
-                      <span className="kpi-value">{patientsList.length}</span>
-                      <span className="kpi-label">{patientsList.length === 1 ? 'Total Patient' : 'Total Patients'}</span>
-                    </div>
-                    <div className="kpi-footer">
-                      <span><i className="fa-solid fa-mars"></i> {maleCount}</span>
-                      <span><i className="fa-solid fa-venus"></i> {femaleCount}</span>
-                      <span><i className="fa-solid fa-genderless"></i> {otherGenderCount}</span>
-                    </div>
-                  </div>
-
                   <div className="admin-kpi-card kpi-bookings">
                     <div className="kpi-icon-bg"><i className="fa-solid fa-calendar-check"></i></div>
                     <div className="kpi-content">
@@ -2499,30 +2501,7 @@ function App() {
                   </div>
                 </div>
 
-                {/* KPI Row 2 - Today's Stats */}
-                <div className="admin-today-row">
-                  <div className="admin-today-card">
-                    <div className="today-card-icon"><i className="fa-solid fa-bolt"></i></div>
-                    <div className="today-card-info">
-                      <span className="today-card-value">{todayBookingsCount}</span>
-                      <span className="today-card-label">Today's Bookings</span>
-                    </div>
-                  </div>
-                  <div className="admin-today-card">
-                    <div className="today-card-icon"><i className="fa-solid fa-coins"></i></div>
-                    <div className="today-card-info">
-                      <span className="today-card-value">₹{todayRevenue.toLocaleString('en-IN')}</span>
-                      <span className="today-card-label">Today's Revenue</span>
-                    </div>
-                  </div>
-                  <div className="admin-today-card">
-                    <div className="today-card-icon"><i className="fa-solid fa-users"></i></div>
-                    <div className="today-card-info">
-                      <span className="today-card-value">{patientsList.length}</span>
-                      <span className="today-card-label">Total Patients</span>
-                    </div>
-                  </div>
-                </div>
+
 
                 {/* Revenue by Payment Mode */}
                 <div className="admin-analytics-grid">
@@ -2570,109 +2549,367 @@ function App() {
                   </div>
                 </div>
 
-                {/* Weekday vs Weekend & Day-of-Week Load */}
+                {/* Patient Flow & Booking Activity */}
+                {/* Patient Flow & Clinical Performance */}
                 <div className="admin-analytics-card" style={{ marginTop: '20px' }}>
                   <h3 className="admin-analytics-title">
-                    <i className="fa-solid fa-business-time"></i> Weekly Patient Flow & Load
+                    <i className={adminPeriodFilter === 'today' ? "fa-solid fa-stethoscope" : "fa-solid fa-business-time"}></i> {
+                      adminPeriodFilter === 'year' ? 'Monthly Booking Activity' : 
+                      adminPeriodFilter === 'today' ? "Today's Clinical Performance & Services" :
+                      'Patient Flow & Load'
+                    }
                   </h3>
                   <div className="admin-flow-container">
-                    {/* Weekday vs Weekend Split */}
+                    {/* Left Split Cards */}
                     <div className="admin-flow-split">
-                      <div className="flow-split-card split-weekday">
-                        <div className="flow-split-icon"><i className="fa-solid fa-briefcase"></i></div>
-                        <div className="flow-split-details">
-                          <h4>Weekdays (Mon - Fri)</h4>
-                          <div className="flow-split-stats">
-                            <span><strong>{weekdayTotalBookings}</strong> Bookings</span>
-                            <span><strong>₹{weekdayTotalRevenue.toLocaleString('en-IN')}</strong> Revenue</span>
+                      {adminPeriodFilter === 'today' ? (
+                        <>
+                          <div className="flow-split-card split-weekday">
+                            <div className="flow-split-icon"><i className="fa-solid fa-receipt"></i></div>
+                            <div className="flow-split-details">
+                              <h4>Average Bill Size</h4>
+                              <div className="flow-split-stats">
+                                <span><strong>₹{todayAvgBill.toLocaleString('en-IN')}</strong> / Visit</span>
+                                <span><strong>{todayBookingsCount}</strong> Patient{todayBookingsCount === 1 ? '' : 's'}</span>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                      <div className="flow-split-card split-weekend">
-                        <div className="flow-split-icon"><i className="fa-solid fa-umbrella-beach"></i></div>
-                        <div className="flow-split-details">
-                          <h4>Weekends (Sat - Sun)</h4>
-                          <div className="flow-split-stats">
-                            <span><strong>{weekendTotalBookings}</strong> Bookings</span>
-                            <span><strong>₹{weekendTotalRevenue.toLocaleString('en-IN')}</strong> Revenue</span>
+                          <div className="flow-split-card split-weekend">
+                            <div className="flow-split-icon"><i className="fa-solid fa-notes-medical"></i></div>
+                            <div className="flow-split-details">
+                              <h4>Procedures & Tests</h4>
+                              <div className="flow-split-stats">
+                                <span><strong>{todayTotalServicesCount}</strong> Delivered</span>
+                                <span>Top: <strong>{todayTopServices[0]?.[0] || '—'}</strong></span>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flow-split-card split-weekday">
+                            <div className="flow-split-icon"><i className="fa-solid fa-briefcase"></i></div>
+                            <div className="flow-split-details">
+                              <h4>Weekdays (Mon - Fri)</h4>
+                              <div className="flow-split-stats">
+                                <span><strong>{weekdayTotalBookings}</strong> Bookings</span>
+                                <span><strong>₹{weekdayTotalRevenue.toLocaleString('en-IN')}</strong> Revenue</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flow-split-card split-weekend">
+                            <div className="flow-split-icon"><i className="fa-solid fa-umbrella-beach"></i></div>
+                            <div className="flow-split-details">
+                              <h4>Weekends (Sat - Sun)</h4>
+                              <div className="flow-split-stats">
+                                <span><strong>{weekendTotalBookings}</strong> Bookings</span>
+                                <span><strong>₹{weekendTotalRevenue.toLocaleString('en-IN')}</strong> Revenue</span>
+                              </div>
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
 
-                    {/* Day of Week load bar chart */}
-                    <div className="admin-weekly-bars">
-                      <h4 className="weekly-bars-subtitle">Daily Booking Activity</h4>
-                      <div className="weekly-bars-grid">
-                        {dayOfWeekNames.map(dayName => {
-                          const count = weekdayBookings[dayName];
-                          const pct = maxDayBookings > 0 ? (count / maxDayBookings) * 100 : 0;
-                          const amount = weekdayRevenue[dayName];
-                          return (
-                            <div className="weekly-bar-column" key={dayName}>
-                              <div className="weekly-bar-track">
-                                <div 
-                                  className="weekly-bar-fill"
-                                  style={{ height: `${pct}%` }}
-                                  title={`${count} bookings, ₹${amount.toLocaleString('en-IN')} revenue`}
-                                >
-                                  {count > 0 && <span className="weekly-bar-count">{count}</span>}
+                    {/* Right View: Today Services vs Month Calendar vs Year Bar Chart */}
+                    {adminPeriodFilter === 'today' ? (
+                      <div className="admin-today-services-card" style={{ flex: '1 1 100%' }}>
+                        <h4 className="weekly-bars-subtitle">Today's Service Demand & Volume</h4>
+                        {todayTopServices.length === 0 ? (
+                          <div className="admin-no-data" style={{ padding: '24px 0', textAlign: 'center' }}>
+                            No clinical services recorded yet today.
+                          </div>
+                        ) : (
+                          <div className="today-services-list">
+                            {todayTopServices.map(([name, count]) => {
+                              const pct = maxTodayServiceCount > 0 ? (count / maxTodayServiceCount) * 100 : 0;
+                              return (
+                                <div className="today-service-row" key={name}>
+                                  <div className="today-service-info">
+                                    <span className="today-service-name">{name}</span>
+                                    <span className="today-service-count">{count} {count === 1 ? 'visit' : 'visits'}</span>
+                                  </div>
+                                  <div className="today-service-bar-track">
+                                    <div 
+                                      className="today-service-bar-fill" 
+                                      style={{ width: `${pct}%` }}
+                                    ></div>
+                                  </div>
                                 </div>
-                              </div>
-                              <span className="weekly-bar-label">{dayName.substring(0, 3)}</span>
-                            </div>
-                          );
-                        })}
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
-                    </div>
+                    ) : adminPeriodFilter === 'month' ? (
+                      <div className="admin-month-calendar" style={{ flex: '1 1 100%' }}>
+                        <h4 className="weekly-bars-subtitle">
+                          {monthNames[currentMonth]} {currentYear} — Booking Calendar
+                        </h4>
+                        <div className="month-cal-grid">
+                          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                            <div className="month-cal-header" key={d}>{d}</div>
+                          ))}
+                          {/* Empty cells for offset */}
+                          {Array.from({ length: new Date(currentYear, currentMonth, 1).getDay() }, (_, i) => (
+                            <div className="month-cal-cell month-cal-empty" key={`empty-${i}`}></div>
+                          ))}
+                          {/* Day cells */}
+                          {dailyMonthBookings.map(d => {
+                            const isToday = d.day === now.getDate();
+                            const intensity = maxDailyMonthBookings > 0 ? d.bookings / maxDailyMonthBookings : 0;
+                            return (
+                              <div 
+                                className={`month-cal-cell ${d.bookings > 0 ? 'has-bookings' : ''} ${isToday ? 'is-today' : ''}`}
+                                key={d.day}
+                                title={`${d.bookings} bookings, ₹${d.revenue.toLocaleString('en-IN')} revenue`}
+                              >
+                                <span className="month-cal-day">{d.day}</span>
+                                {d.bookings > 0 && (
+                                  <span 
+                                    className="month-cal-count"
+                                    style={{ opacity: 0.5 + intensity * 0.5 }}
+                                  >{d.bookings}</span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="admin-weekly-bars" style={adminPeriodFilter === 'year' ? { flex: '1 1 100%' } : {}}>
+                        <h4 className="weekly-bars-subtitle">
+                          {adminPeriodFilter === 'year' ? 'Month-wise Bookings' : 'Daily Booking Activity'}
+                        </h4>
+                        <div className="weekly-bars-grid">
+                          {adminPeriodFilter === 'year' ? (
+                            monthlyRevenueTrend.map(m => {
+                              const maxMonthBookings = Math.max(...monthlyRevenueTrend.map(mt => mt.bookings), 1);
+                              const pct = maxMonthBookings > 0 ? (m.bookings / maxMonthBookings) * 85 : 0;
+                              return (
+                                <div className="weekly-bar-column" key={m.month}>
+                                  <div className="weekly-bar-track">
+                                    <div 
+                                      className="weekly-bar-fill"
+                                      style={{ height: `${pct}%` }}
+                                      title={`${m.bookings} bookings, ₹${m.revenue.toLocaleString('en-IN')} revenue`}
+                                    >
+                                      {m.bookings > 0 && <span className="weekly-bar-count">{m.bookings}</span>}
+                                    </div>
+                                  </div>
+                                  <span className="weekly-bar-label">{m.month}</span>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            dayOfWeekNames.map(dayName => {
+                              const count = weekdayBookings[dayName];
+                              const pct = maxDayBookings > 0 ? (count / maxDayBookings) * 85 : 0;
+                              const amount = weekdayRevenue[dayName];
+                              return (
+                                <div className="weekly-bar-column" key={dayName}>
+                                  <div className="weekly-bar-track">
+                                    <div 
+                                      className="weekly-bar-fill"
+                                      style={{ height: `${pct}%` }}
+                                      title={`${count} bookings, ₹${amount.toLocaleString('en-IN')} revenue`}
+                                    >
+                                      {count > 0 && <span className="weekly-bar-count">{count}</span>}
+                                    </div>
+                                  </div>
+                                  <span className="weekly-bar-label">{dayName.substring(0, 3)}</span>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {/* Recent Bookings Table */}
                 <div className="admin-analytics-card" style={{ marginTop: '20px' }}>
-                  <h3 className="admin-analytics-title">
-                    <i className="fa-solid fa-clock-rotate-left"></i> Recent Bookings
-                  </h3>
-                  {bookingsList.length === 0 ? (
-                    <p className="admin-no-data">No bookings recorded yet.</p>
-                  ) : (
-                    <div className="admin-table-wrapper">
-                      <table className="admin-table">
-                        <thead>
-                          <tr>
-                            <th>Invoice</th>
-                            <th>Date</th>
-                            <th>Patient</th>
-                            <th>Services</th>
-                            <th>Total</th>
-                            <th>Payment</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {sortedBookings.slice(0, 5).map(b => (
-                            <tr key={b.id}>
-                              <td><code className="admin-id-badge">{b.id}</code></td>
-                              <td>{b.date}</td>
-                              <td><strong>{b.patientName}</strong></td>
-                              <td>
-                                <div className="admin-services-tags">
-                                  {b.services.map((s, idx) => (
-                                    <span className="admin-service-tag" key={idx}>{s.name}</span>
-                                  ))}
-                                </div>
-                              </td>
-                              <td><strong>₹{b.total.toLocaleString('en-IN')}</strong></td>
-                              <td>
-                                <span className={`admin-payment-badge mode-badge-${b.paymentMode.toLowerCase().replace(/\s+/g, '')}`}>
-                                  {b.paymentMode}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
+                    <h3 className="admin-analytics-title" style={{ margin: 0 }}>
+                      <i className="fa-solid fa-calendar-check"></i> {
+                        adminPeriodFilter === 'today' ? "Today's Bookings" :
+                        adminPeriodFilter === 'month' ? "This Month's Bookings" :
+                        adminPeriodFilter === 'year' ? "This Year's Bookings" :
+                        "Bookings"
+                      }
+                    </h3>
+                    <div className="admin-booking-search-wrapper">
+                      <i className="fa-solid fa-magnifying-glass admin-booking-search-icon"></i>
+                      <input
+                        type="text"
+                        className="admin-booking-search-input"
+                        placeholder="Booking ID..."
+                        value={overviewBookingIdSearch}
+                        onChange={(e) => setOverviewBookingIdSearch(e.target.value)}
+                      />
+                      {overviewBookingIdSearch && (
+                        <button
+                          type="button"
+                          className="admin-booking-search-clear"
+                          onClick={() => setOverviewBookingIdSearch('')}
+                          title="Clear search"
+                        >
+                          <i className="fa-solid fa-xmark"></i>
+                        </button>
+                      )}
                     </div>
-                  )}
+                  </div>
+
+                  {(() => {
+                    const sourceList = overviewBookingIdSearch.trim() ? bookingsList : filteredBookings;
+                    const searchFiltered = sourceList.filter(b => {
+                      if (!overviewBookingIdSearch.trim()) return true;
+                      const rawQ = overviewBookingIdSearch.trim().toLowerCase();
+                      
+                      // 1. Patient Name
+                      if (b.patientName && b.patientName.toLowerCase().includes(rawQ)) return true;
+                      
+                      // 2. Patient Phone
+                      if (b.patientPhone && b.patientPhone.includes(rawQ)) return true;
+                      if (b.phone && b.phone.includes(rawQ)) return true;
+
+                      // 3. Service Name
+                      if (b.services && b.services.some(s => s.name && s.name.toLowerCase().includes(rawQ))) return true;
+
+                      // 4. Booking / Invoice ID matching
+                      const idStr = String(b.id || '');
+                      const idNum = parseInt(idStr, 10);
+
+                      // Direct ID string match
+                      if (idStr.toLowerCase().includes(rawQ)) return true;
+
+                      // Clean prefix like 'bkg-', 'inv-', '#', 'invoice'
+                      const cleanQ = rawQ.replace(/^(bkg|inv|invoice)[-\s]*/i, '').replace('#', '').trim();
+                      if (cleanQ && idStr.toLowerCase().includes(cleanQ)) return true;
+                      
+                      // Padded ID match (e.g. '030')
+                      const paddedId = idStr.padStart(3, '0');
+                      if (cleanQ && paddedId.includes(cleanQ)) return true;
+
+                      // Extract trailing digits (e.g. from '2026-030' or 'bkg-2026-030')
+                      const numMatch = cleanQ.match(/\d+$/);
+                      if (numMatch) {
+                        const searchNum = parseInt(numMatch[0], 10);
+                        if (!isNaN(idNum) && !isNaN(searchNum) && idNum === searchNum) return true;
+                      }
+
+                      return false;
+                    });
+
+                    if (searchFiltered.length === 0) {
+                      return (
+                        <p className="admin-no-data">
+                          {overviewBookingIdSearch.trim()
+                            ? `No booking found matching "${overviewBookingIdSearch}".`
+                            : 'No bookings recorded for this period.'}
+                        </p>
+                      );
+                    }
+
+                    const sortedFilteredBookings = [...searchFiltered].sort((a, b) => {
+                      const idA = parseInt(a.id, 10);
+                      const idB = parseInt(b.id, 10);
+                      if (!isNaN(idA) && !isNaN(idB)) return idB - idA;
+                      return new Date(b.date) - new Date(a.date);
+                    });
+                    const totalOverviewPages = Math.ceil(sortedFilteredBookings.length / 10);
+                    const startIndexOverview = (overviewBookingsPage - 1) * 10;
+                    const paginatedOverviewBookings = sortedFilteredBookings.slice(startIndexOverview, startIndexOverview + 10);
+
+                    return (
+                      <>
+                        <div className="admin-table-wrapper">
+                          <table className="admin-table">
+                            <thead>
+                              <tr>
+                                <th>Date</th>
+                                <th>Patient</th>
+                                <th>Services</th>
+                                <th>Total</th>
+                                <th>Payment</th>
+                                <th style={{ textAlign: 'center' }}>Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {paginatedOverviewBookings.map(b => (
+                                <tr key={b.id}>
+                                  <td>{b.date}</td>
+                                  <td><strong>{b.patientName}</strong></td>
+                                  <td>
+                                    <div className="admin-services-tags">
+                                      {b.services.map((s, idx) => (
+                                        <span className="admin-service-tag" key={idx}>{s.name}</span>
+                                      ))}
+                                    </div>
+                                  </td>
+                                  <td><strong>₹{b.total.toLocaleString('en-IN')}</strong></td>
+                                  <td>
+                                    <span className={`admin-payment-badge mode-badge-${b.paymentMode.toLowerCase().replace(/\s+/g, '')}`}>
+                                      {b.paymentMode}
+                                    </span>
+                                  </td>
+                                  <td style={{ textAlign: 'center' }}>
+                                    <button 
+                                      className="admin-table-action-btn"
+                                      onClick={() => setActiveInvoice(b)}
+                                      title="View Bill / Invoice"
+                                    >
+                                      <i className="fa-solid fa-file-invoice"></i> View
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {totalOverviewPages > 1 && (
+                          <div className="pagination-container" style={{ marginTop: '16px' }}>
+                            <div className="pagination-info">
+                              Showing <strong>{startIndexOverview + 1}</strong> to <strong>{Math.min(startIndexOverview + 10, searchFiltered.length)}</strong> of <strong>{searchFiltered.length}</strong> bookings
+                            </div>
+                            <div className="pagination-btn-group">
+                              <button 
+                                className="pagination-btn" 
+                                onClick={() => setOverviewBookingsPage(p => Math.max(p - 1, 1))} 
+                                disabled={overviewBookingsPage === 1}
+                                title="Previous Page"
+                              >
+                                <i className="fa-solid fa-chevron-left"></i>
+                              </button>
+                              {getPaginationRange(overviewBookingsPage, totalOverviewPages).map((p, idx) => (
+                                p === '...' ? (
+                                  <span key={`dots-${idx}`} className="pagination-dots">...</span>
+                                ) : (
+                                  <button 
+                                    key={p} 
+                                    className={`pagination-btn ${overviewBookingsPage === p ? 'active' : ''}`}
+                                    onClick={() => setOverviewBookingsPage(p)}
+                                  >
+                                    {p}
+                                  </button>
+                                )
+                              ))}
+                              <button 
+                                className="pagination-btn" 
+                                onClick={() => setOverviewBookingsPage(p => Math.min(p + 1, totalOverviewPages))} 
+                                disabled={overviewBookingsPage === totalOverviewPages}
+                                title="Next Page"
+                              >
+                                <i className="fa-solid fa-chevron-right"></i>
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             )}
@@ -2770,37 +3007,7 @@ function App() {
                   </div>
                 )}
 
-                {/* Gender distribution cards */}
-                <div className="admin-patient-stats-row">
-                  <div 
-                    className={`admin-patient-stat-chip stat-chip-total ${patientGenderFilter === 'All' ? 'active' : 'inactive'}`}
-                    onClick={() => setPatientGenderFilter('All')}
-                  >
-                    <i className="fa-solid fa-users"></i>
-                    <span>{patientsList.length} Total</span>
-                  </div>
-                  <div 
-                    className={`admin-patient-stat-chip stat-chip-male ${patientGenderFilter === 'Male' ? 'active' : 'inactive'}`}
-                    onClick={() => setPatientGenderFilter('Male')}
-                  >
-                    <i className="fa-solid fa-mars"></i>
-                    <span>{maleCount} Male</span>
-                  </div>
-                  <div 
-                    className={`admin-patient-stat-chip stat-chip-female ${patientGenderFilter === 'Female' ? 'active' : 'inactive'}`}
-                    onClick={() => setPatientGenderFilter('Female')}
-                  >
-                    <i className="fa-solid fa-venus"></i>
-                    <span>{femaleCount} Female</span>
-                  </div>
-                  <div 
-                    className={`admin-patient-stat-chip stat-chip-other ${patientGenderFilter === 'Other' ? 'active' : 'inactive'}`}
-                    onClick={() => setPatientGenderFilter('Other')}
-                  >
-                    <i className="fa-solid fa-genderless"></i>
-                    <span>{otherGenderCount} Other</span>
-                  </div>
-                </div>
+
 
                 {patientsList.length === 0 ? (
                   <div className="admin-empty-state">
@@ -2827,7 +3034,6 @@ function App() {
                             <th>Age</th>
                             <th>Gender</th>
                             <th>Address</th>
-                            <th style={{ width: '80px', textAlign: 'center' }}>ID</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -2853,7 +3059,6 @@ function App() {
                                 </span>
                               </td>
                               <td>{p.address || '—'}</td>
-                              <td style={{ textAlign: 'center' }}><code className="admin-id-badge">{p.id}</code></td>
                             </tr>
                           ))}
                         </tbody>
@@ -2872,7 +3077,6 @@ function App() {
                                 </div>
                                 <div className="patient-card-name-id">
                                   <span className="patient-card-name">{p.name}</span>
-                                  <span className="patient-card-id">ID: {p.id}</span>
                                 </div>
                               </div>
                               <span className={`admin-gender-badge gender-${p.gender.toLowerCase()}`}>
@@ -2922,10 +3126,8 @@ function App() {
                 <div className="admin-period-selector-row">
                   <div className="admin-period-selector">
                     <button className={`period-btn ${adminPeriodFilter === 'today' ? 'active' : ''}`} onClick={() => setAdminPeriodFilter('today')}>Today</button>
-                    <button className={`period-btn ${adminPeriodFilter === 'week' ? 'active' : ''}`} onClick={() => setAdminPeriodFilter('week')}>This Week</button>
                     <button className={`period-btn ${adminPeriodFilter === 'month' ? 'active' : ''}`} onClick={() => setAdminPeriodFilter('month')}>This Month</button>
                     <button className={`period-btn ${adminPeriodFilter === 'year' ? 'active' : ''}`} onClick={() => setAdminPeriodFilter('year')}>This Year</button>
-                    <button className={`period-btn ${adminPeriodFilter === 'all' ? 'active' : ''}`} onClick={() => setAdminPeriodFilter('all')}>All Time</button>
                   </div>
                 </div>
 
@@ -3488,16 +3690,6 @@ function App() {
                       <span className="invoice-words-label">Amount in Words:</span>
                       <p className="invoice-words-text">{convertNumberToWords(activeInvoice.total)}</p>
                     </div>
-                    
-                    <div className="invoice-clinical-notes">
-                      <h5>Terms & Instructions:</h5>
-                      <ul>
-                        <li>Fees once paid are non-refundable and non-transferable.</li>
-                        <li>Follow-up consultation is complimentary within 7 days of this invoice.</li>
-                        <li>Please carry this invoice card for your next consultation or review.</li>
-                        <li>All disputes are subject to Jangipur jurisdiction only.</li>
-                      </ul>
-                    </div>
                   </div>
 
                   <div className="invoice-totals-col">
@@ -3536,7 +3728,7 @@ function App() {
                 {/* Clinic Footer Message */}
                 <div className="invoice-preview-footer">
                   <p className="footer-greeting">Wish You A Speedy Recovery!</p>
-                  <p className="footer-meta-text">This is a computer-generated tax invoice. Signature is optional but recorded for verification.</p>
+                  <p className="footer-meta-text">This is a computer-generated invoice. Signature is optional but recorded for verification.</p>
                 </div>
               </div>
             </div>

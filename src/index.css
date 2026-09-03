@@ -9029,6 +9029,8 @@ body.dark-mode .admin-bar-track {
     background: var(--background);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
+    overflow: hidden;
+    min-width: 0;
 }
 
 .weekly-bars-subtitle {
@@ -9042,17 +9044,29 @@ body.dark-mode .admin-bar-track {
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
-    height: 160px;
-    padding: 10px 0;
+    height: 180px;
+    padding: 25px 0 6px 0;
     border-bottom: 1px solid var(--border-color);
     gap: 10px;
+    overflow-x: auto;
+    overflow-y: visible;
+}
+
+.weekly-bars-grid::-webkit-scrollbar {
+    height: 4px;
+}
+
+.weekly-bars-grid::-webkit-scrollbar-thumb {
+    background: rgba(var(--primary-rgb), 0.3);
+    border-radius: 4px;
 }
 
 .weekly-bar-column {
     display: flex;
     flex-direction: column;
     align-items: center;
-    flex: 1;
+    flex: 1 0 auto;
+    min-width: 20px;
     height: 100%;
 }
 
@@ -9062,10 +9076,12 @@ body.dark-mode .admin-bar-track {
     display: flex;
     align-items: flex-end;
     justify-content: center;
+    position: relative;
 }
 
 .weekly-bar-fill {
     width: 28px;
+    max-width: 100%;
     background: linear-gradient(180deg, var(--primary) 0%, rgba(var(--primary-rgb), 0.7) 100%);
     border-radius: 4px 4px 0 0;
     transition: height 0.6s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease;
@@ -9081,10 +9097,12 @@ body.dark-mode .admin-bar-track {
 
 .weekly-bar-count {
     position: absolute;
-    top: -20px;
+    top: -22px;
     font-size: 0.75rem;
     font-weight: 700;
     color: var(--primary);
+    white-space: nowrap;
+    line-height: 1;
 }
 
 .weekly-bar-label {
@@ -9092,6 +9110,147 @@ body.dark-mode .admin-bar-track {
     color: var(--text-secondary);
     margin-top: 8px;
     font-weight: 500;
+}
+
+/* Month Booking Calendar View */
+.admin-month-calendar {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px 18px;
+    background: var(--background);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    min-width: 0;
+}
+
+.month-cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+}
+
+.month-cal-header {
+    text-align: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 4px 0;
+}
+
+.month-cal-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 4px 2px;
+    border-radius: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.month-cal-cell.month-cal-empty {
+    background: transparent;
+    border: none;
+}
+
+.month-cal-cell:not(.month-cal-empty):hover {
+    border-color: var(--primary);
+    transform: translateY(-1px);
+}
+
+.month-cal-cell.is-today {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 1.5px var(--primary);
+}
+
+.month-cal-cell.has-bookings {
+    background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.15) 0%, rgba(var(--primary-rgb), 0.28) 100%);
+    border-color: rgba(var(--primary-rgb), 0.45);
+    cursor: pointer;
+}
+
+.month-cal-day {
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1;
+}
+
+.month-cal-count {
+    margin-top: 3px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #fff;
+    background: var(--primary);
+    border-radius: 10px;
+    padding: 1px 5px;
+    line-height: 1.2;
+}
+
+/* Today's Services Performance Breakdown */
+.admin-today-services-card {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 14px 18px;
+    background: var(--background);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    min-width: 0;
+}
+
+.today-services-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.today-service-row {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.today-service-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.82rem;
+}
+
+.today-service-name {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.today-service-count {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--primary);
+    background: rgba(var(--primary-rgb), 0.12);
+    padding: 2px 7px;
+    border-radius: 12px;
+}
+
+.today-service-bar-track {
+    width: 100%;
+    height: 7px;
+    background: rgba(var(--border-color-rgb, 140, 150, 170), 0.18);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.today-service-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary) 0%, rgba(var(--primary-rgb), 0.8) 100%);
+    border-radius: 4px;
+    transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Premium Invoice Print and Preview Aesthetics */
@@ -10227,4 +10386,55 @@ body.dark-mode .clinic-seal-placeholder {
         justify-content: center;
         flex-wrap: wrap;
     }
+}
+
+/* Admin Booking ID Search */
+.admin-booking-search-wrapper {
+    position: relative;
+    width: 240px;
+}
+
+.admin-booking-search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    pointer-events: none;
+}
+
+.admin-booking-search-input {
+    width: 100%;
+    padding: 8px 34px 8px 36px;
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.admin-booking-search-input:focus {
+    border-color: var(--admin-color, #38BDF8);
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+}
+
+.admin-booking-search-clear {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 2px 6px;
+    font-size: 0.85rem;
+    border-radius: 50%;
+}
+
+.admin-booking-search-clear:hover {
+    color: var(--text-primary);
 }
