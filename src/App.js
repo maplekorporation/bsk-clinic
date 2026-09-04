@@ -2283,27 +2283,6 @@ function App() {
           return acc;
         }, {});
 
-        // 1. Service Category Mapping
-        const serviceCategoryMap = {
-          'Hearing Test (Audiometry/Tympanometry/TDT/SISI)': 'Audiology',
-          'Newborn & Child Hearing Test (OAE & BERA)': 'Pediatric Audiology',
-          'Digital Hearing Aid Trial & Fitting': 'Hearing Aid',
-          'Polysomnography (Sleep Apnea Study)': 'Sleep Study',
-          'ENT Endoscopy (FOL, DNE, OTO Endoscopy)': 'ENT Endoscopy',
-          'Speech Therapy (Single Session)': 'Speech Therapy',
-          'Occupational Therapy (Single Session)': 'Occupational Therapy'
-        };
-
-        // 2. Revenue by Category (dynamically calculated for filteredBookings)
-        const revenueByCategory = filteredBookings.reduce((acc, b) => {
-          b.services.forEach(s => {
-            const cat = serviceCategoryMap[s.name] || 'General / Other';
-            acc[cat] = (acc[cat] || 0) + s.price;
-          });
-          return acc;
-        }, {});
-        const sortedCategoryRevenue = Object.entries(revenueByCategory).sort((a, b) => b[1] - a[1]);
-        const maxCategoryRevenue = sortedCategoryRevenue.length > 0 ? sortedCategoryRevenue[0][1] : 1;
 
         // 3. Patient Age Groups
         const ageGroups = {
@@ -3188,57 +3167,29 @@ function App() {
                   </div>
                 </div>
 
-                {/* Revenue by Service and Category side-by-side */}
-                <div className="admin-analytics-grid" style={{ marginTop: '20px' }}>
-                  {/* Revenue by Service */}
-                  <div className="admin-analytics-card">
-                    <h3 className="admin-analytics-title">
-                      <i className="fa-solid fa-briefcase-medical"></i> Revenue by Service
-                    </h3>
-                    {sortedServiceRevenue.length === 0 ? (
-                      <p className="admin-no-data">No service revenue data available.</p>
-                    ) : (
-                      <div className="admin-bar-chart">
-                        {sortedServiceRevenue.map(([name, amount]) => (
-                          <div className="admin-bar-row" key={name}>
-                            <div className="admin-bar-label admin-bar-label-wide" title={name}>{name}</div>
-                            <div className="admin-bar-track">
-                              <div 
-                                className="admin-bar-fill admin-bar-fill-service"
-                                style={{ width: `${(amount / maxServiceRevenue * 100)}%` }}
-                              ></div>
-                            </div>
-                            <span className="admin-bar-value">₹{amount.toLocaleString('en-IN')}</span>
+                {/* Revenue by Service */}
+                <div className="admin-analytics-card" style={{ marginTop: '20px' }}>
+                  <h3 className="admin-analytics-title">
+                    <i className="fa-solid fa-briefcase-medical"></i> Revenue by Service
+                  </h3>
+                  {sortedServiceRevenue.length === 0 ? (
+                    <p className="admin-no-data">No service revenue data available.</p>
+                  ) : (
+                    <div className="admin-bar-chart">
+                      {sortedServiceRevenue.map(([name, amount]) => (
+                        <div className="admin-bar-row" key={name}>
+                          <div className="admin-bar-label admin-bar-label-wide" title={name}>{name}</div>
+                          <div className="admin-bar-track">
+                            <div 
+                              className="admin-bar-fill admin-bar-fill-service"
+                              style={{ width: `${(amount / maxServiceRevenue * 100)}%` }}
+                            ></div>
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Revenue by Department (Category) */}
-                  <div className="admin-analytics-card">
-                    <h3 className="admin-analytics-title">
-                      <i className="fa-solid fa-hospital-user"></i> Revenue by Department
-                    </h3>
-                    {sortedCategoryRevenue.length === 0 ? (
-                      <p className="admin-no-data">No category revenue data available.</p>
-                    ) : (
-                      <div className="admin-bar-chart">
-                        {sortedCategoryRevenue.map(([cat, amount]) => (
-                          <div className="admin-bar-row" key={cat}>
-                            <div className="admin-bar-label admin-bar-label-wide">{cat}</div>
-                            <div className="admin-bar-track">
-                              <div 
-                                className="admin-bar-fill"
-                                style={{ width: `${(amount / maxCategoryRevenue * 100)}%`, background: 'var(--secondary)' }}
-                              ></div>
-                            </div>
-                            <span className="admin-bar-value">₹{amount.toLocaleString('en-IN')}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                          <span className="admin-bar-value">₹{amount.toLocaleString('en-IN')}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Revenue by Date */}
