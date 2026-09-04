@@ -2345,22 +2345,28 @@ function App() {
         });
         const maxMonthlyRevenue = Math.max(...monthlyRevenueTrend.map(m => m.revenue), 1);
 
-        // 6. Daily bookings for current month (day 1..N)
+        // 6. Daily bookings & revenue for current month (day 1..N)
         const daysInCurrentMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
         const dailyMonthBookings = Array.from({ length: daysInCurrentMonth }, (_, i) => ({
           day: i + 1,
           bookings: 0,
           revenue: 0
         }));
-        filteredBookings.forEach(b => {
-          if (adminPeriodFilter === 'month') {
-            const bDate = parseLocalDate(b.date);
+        bookingsList.forEach(b => {
+          if (!b.date) return;
+          const bDate = parseLocalDate(b.date);
+          if (bDate.getFullYear() === currentYear && bDate.getMonth() === currentMonth) {
             const dayOfMonth = bDate.getDate();
-            dailyMonthBookings[dayOfMonth - 1].bookings += 1;
-            dailyMonthBookings[dayOfMonth - 1].revenue += b.total;
+            if (dayOfMonth >= 1 && dayOfMonth <= daysInCurrentMonth) {
+              dailyMonthBookings[dayOfMonth - 1].bookings += 1;
+              dailyMonthBookings[dayOfMonth - 1].revenue += (b.total || 0);
+            }
           }
         });
         const maxDailyMonthBookings = Math.max(...dailyMonthBookings.map(d => d.bookings), 1);
+        const maxDailyMonthRevenue = Math.max(...dailyMonthBookings.map(d => d.revenue), 1);
+        const activeRevenueDaysCount = dailyMonthBookings.filter(d => d.revenue > 0).length;
+        const bestRevenueDay = dailyMonthBookings.reduce((best, curr) => curr.revenue > best.revenue ? curr : best, { day: 0, revenue: 0, bookings: 0 });
 
         // Admin search state for patients & bookings
         const getInitials = (name) => {
@@ -3135,37 +3141,208 @@ function App() {
                   </div>
                 </div>
 
-                {/* Monthly Revenue Trend Chart (Always shows full current year comparisons) */}
-                <div className="admin-analytics-card" style={{ marginTop: '20px' }}>
-                  <h3 className="admin-analytics-title">
-                    <i className="fa-solid fa-chart-bar"></i> Monthly Revenue Trend ({currentYear})
-                  </h3>
-                  <div className="admin-monthly-trend-container">
-                    <div className="admin-monthly-trend-grid">
-                      {monthlyRevenueTrend.map(m => {
-                        const pct = maxMonthlyRevenue > 0 ? (m.revenue / maxMonthlyRevenue) * 100 : 0;
-                        return (
-                          <div className="monthly-trend-column" key={m.month}>
-                            <div className="monthly-trend-track">
-                              <div 
-                                className="monthly-trend-fill"
-                                style={{ height: `${pct}%` }}
-                                title={`${m.month}: ${m.bookings} booking${m.bookings !== 1 ? 's' : ''}, ₹${m.revenue.toLocaleString('en-IN')} revenue`}
-                              >
-                                {m.revenue > 0 && (
-                                  <span className="monthly-trend-value">
-                                    ₹{m.revenue >= 1000 ? `${(m.revenue / 1000).toFixed(1)}k` : m.revenue}
-                                  </span>
+                {/* Revenue Trend / Calendar View by Period */}
+                {adminPeriodFilter === 'month' ? (
+                  <div className="admin-analytics-card" style={{ marginTop: '20px' }}>
+                    <h3 className="admin-analytics-title" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                      <span>
+                        <i className="fa-solid fa-calendar-days"></i> Daily Revenue Calendar — {monthNames[currentMonth]} {currentYear}
+                      </span>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--primary)', background: 'rgba(var(--primary-rgb), 0.1)', padding: '3px 10px', borderRadius: '12px' }}>
+                        ₹{totalRevenue.toLocaleString('en-IN')} Total
+                      </span>
+                    </h3>
+
+                    <div className="rev-cal-wrapper">
+                      {/* Insights Bar */}
+                      <div className="rev-cal-insights-bar">
+                        <div className="rev-cal-insight-item">
+                          <div className="rev-cal-insight-icon">
+                            <i className="fa-solid fa-trophy"></i>
+                          </div>
+                          <div className="rev-cal-insight-data">
+                            <span className="rev-cal-insight-label">Best Revenue Day</span>
+                            <span className="rev-cal-insight-value">
+                              {bestRevenueDay.revenue > 0 
+                                ? `${monthNames[currentMonth]} ${bestRevenueDay.day} (₹${bestRevenueDay.revenue.toLocaleString('en-IN')})` 
+                                : '—'}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="rev-cal-insight-item">
+                          <div className="rev-cal-insight-icon" style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#059669' }}>
+                            <i className="fa-solid fa-calendar-check"></i>
+                          </div>
+                          <div className="rev-cal-insight-data">
+                            <span className="rev-cal-insight-label">Active Days</span>
+                            <span className="rev-cal-insight-value">{activeRevenueDaysCount} of {daysInCurrentMonth} Days</span>
+                          </div>
+                        </div>
+                        <div className="rev-cal-insight-item">
+                          <div className="rev-cal-insight-icon" style={{ background: 'rgba(59, 130, 246, 0.12)', color: '#2563eb' }}>
+                            <i className="fa-solid fa-chart-line"></i>
+                          </div>
+                          <div className="rev-cal-insight-data">
+                            <span className="rev-cal-insight-label">Avg / Active Day</span>
+                            <span className="rev-cal-insight-value">
+                              ₹{activeRevenueDaysCount > 0 ? Math.round(totalRevenue / activeRevenueDaysCount).toLocaleString('en-IN') : '0'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 7-column Calendar Grid */}
+                      <div className="rev-cal-grid">
+                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                          <div className="rev-cal-day-header" key={d}>{d}</div>
+                        ))}
+                        {/* Empty cells for starting day offset */}
+                        {Array.from({ length: new Date(currentYear, currentMonth, 1).getDay() }, (_, i) => (
+                          <div className="rev-cal-cell rev-cal-empty" key={`rev-empty-${i}`}></div>
+                        ))}
+                        {/* Day cells */}
+                        {dailyMonthBookings.map(d => {
+                          const isToday = d.day === now.getDate();
+                          const hasRevenue = d.revenue > 0;
+                          const intensity = maxDailyMonthRevenue > 0 ? d.revenue / maxDailyMonthRevenue : 0;
+
+                          const cellStyle = hasRevenue ? {
+                            background: `linear-gradient(135deg, rgba(16, 185, 129, ${0.08 + intensity * 0.18}) 0%, rgba(16, 185, 129, ${0.14 + intensity * 0.26}) 100%)`,
+                            borderColor: `rgba(16, 185, 129, ${0.3 + intensity * 0.45})`
+                          } : {};
+
+                          return (
+                            <div 
+                              className={`rev-cal-cell ${hasRevenue ? 'has-revenue' : ''} ${isToday ? 'is-today' : ''}`}
+                              key={d.day}
+                              style={cellStyle}
+                              title={`Day ${d.day} (${monthNames[currentMonth]} ${d.day}, ${currentYear})\nRevenue: ₹${d.revenue.toLocaleString('en-IN')}\nBookings: ${d.bookings}${d.bookings > 0 ? `\nAvg per booking: ₹${Math.round(d.revenue / d.bookings).toLocaleString('en-IN')}` : ''}`}
+                            >
+                              <div className="rev-cal-cell-top">
+                                <span className="rev-cal-date-number">{d.day}</span>
+                                {isToday && <span className="rev-cal-today-pill">Today</span>}
+                              </div>
+                              <div className="rev-cal-cell-body">
+                                {hasRevenue ? (
+                                  <>
+                                    <div className="rev-cal-amount">
+                                      ₹{d.revenue >= 100000 
+                                        ? `${(d.revenue / 1000).toFixed(0)}k` 
+                                        : d.revenue.toLocaleString('en-IN')}
+                                    </div>
+                                    <div className="rev-cal-meta">
+                                      <i className="fa-solid fa-user-check"></i> {d.bookings} {d.bookings === 1 ? 'bk' : 'bks'}
+                                    </div>
+                                  </>
+                                ) : (
+                                  <div className="rev-cal-zero">—</div>
                                 )}
                               </div>
                             </div>
-                            <span className="monthly-trend-label">{m.month}</span>
+                          );
+                        })}
+                      </div>
+
+                      {/* Footer Legend */}
+                      <div className="rev-cal-footer">
+                        <div className="rev-cal-legend">
+                          <span style={{ fontWeight: 600 }}>Collection Intensity:</span>
+                          <span style={{ fontSize: '0.7rem' }}>₹0</span>
+                          <div className="rev-cal-legend-gradient"></div>
+                          <span style={{ fontSize: '0.7rem', fontWeight: 700 }}>₹{maxDailyMonthRevenue.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                          <div className="rev-cal-legend-item">
+                            <span className="rev-cal-indicator-dot" style={{ background: 'var(--primary)', boxShadow: '0 0 0 2px rgba(var(--primary-rgb), 0.3)' }}></span>
+                            <span>Current Day (Today)</span>
                           </div>
-                        );
-                      })}
+                          <div className="rev-cal-legend-item">
+                            <span className="rev-cal-indicator-dot" style={{ background: '#059669' }}></span>
+                            <span>Active Clinic Revenue</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : adminPeriodFilter === 'year' ? (
+                  <div className="admin-analytics-card" style={{ marginTop: '20px' }}>
+                    <h3 className="admin-analytics-title">
+                      <i className="fa-solid fa-chart-bar"></i> Monthly Revenue Trend ({currentYear})
+                    </h3>
+                    <div className="admin-monthly-trend-container">
+                      <div className="admin-monthly-trend-grid">
+                        {monthlyRevenueTrend.map(m => {
+                          const pct = maxMonthlyRevenue > 0 ? (m.revenue / maxMonthlyRevenue) * 100 : 0;
+                          return (
+                            <div className="monthly-trend-column" key={m.month}>
+                              <div className="monthly-trend-track">
+                                <div 
+                                  className="monthly-trend-fill"
+                                  style={{ height: `${pct}%` }}
+                                  title={`${m.month}: ${m.bookings} booking${m.bookings !== 1 ? 's' : ''}, ₹${m.revenue.toLocaleString('en-IN')} revenue`}
+                                >
+                                  {m.revenue > 0 && (
+                                    <span className="monthly-trend-value">
+                                      ₹{m.revenue >= 1000 ? `${(m.revenue / 1000).toFixed(1)}k` : m.revenue}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <span className="monthly-trend-label">{m.month}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="admin-analytics-card" style={{ marginTop: '20px' }}>
+                    <h3 className="admin-analytics-title" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                      <span>
+                        <i className="fa-solid fa-bolt"></i> Today's Performance & Collections ({now.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })})
+                      </span>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--primary)', background: 'rgba(var(--primary-rgb), 0.1)', padding: '3px 10px', borderRadius: '12px' }}>
+                        ₹{totalRevenue.toLocaleString('en-IN')} Today
+                      </span>
+                    </h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', marginTop: '14px' }}>
+                      <div style={{ padding: '16px', background: 'rgba(var(--admin-color-rgb, 56, 189, 248), 0.04)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                        <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          <i className="fa-solid fa-wallet" style={{ marginRight: '6px', color: 'var(--primary)' }}></i> Payment Modes Today
+                        </div>
+                        {Object.entries(revenueByPayment).length === 0 ? (
+                          <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-secondary)' }}>No transactions recorded yet today.</p>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {Object.entries(revenueByPayment).map(([mode, amount]) => (
+                              <div key={mode} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
+                                <span style={{ fontWeight: 600 }}>{mode}</span>
+                                <span style={{ fontWeight: 700, color: '#059669' }}>₹{amount.toLocaleString('en-IN')}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ padding: '16px', background: 'rgba(var(--admin-color-rgb, 56, 189, 248), 0.04)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                        <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          <i className="fa-solid fa-briefcase-medical" style={{ marginRight: '6px', color: 'var(--secondary)' }}></i> Top Services Delivered Today
+                        </div>
+                        {sortedServiceRevenue.length === 0 ? (
+                          <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-secondary)' }}>No services delivered yet today.</p>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {sortedServiceRevenue.slice(0, 4).map(([name, amount]) => (
+                              <div key={name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
+                                <span style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }} title={name}>{name}</span>
+                                <span style={{ fontWeight: 700, color: '#059669' }}>₹{amount.toLocaleString('en-IN')}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Revenue by Service */}
                 <div className="admin-analytics-card" style={{ marginTop: '20px' }}>

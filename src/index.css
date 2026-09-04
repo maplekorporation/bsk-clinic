@@ -10438,3 +10438,247 @@ body.dark-mode .clinic-seal-placeholder {
 .admin-booking-search-clear:hover {
     color: var(--text-primary);
 }
+
+/* =========================================================
+   Monthly Revenue Calendar View Styles
+   ========================================================= */
+.rev-cal-wrapper {
+    margin-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.rev-cal-insights-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    padding: 12px 16px;
+    background: rgba(var(--admin-color-rgb, 56, 189, 248), 0.04);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+}
+
+.rev-cal-insight-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.rev-cal-insight-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    background: rgba(var(--primary-rgb, 42, 157, 143), 0.12);
+    color: var(--primary, #2A9D8F);
+    flex-shrink: 0;
+}
+
+.rev-cal-insight-data {
+    display: flex;
+    flex-direction: column;
+}
+
+.rev-cal-insight-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.rev-cal-insight-value {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* 7-column Calendar Grid */
+.rev-cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+}
+
+.rev-cal-day-header {
+    text-align: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    padding: 6px 0;
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 6px;
+}
+
+.rev-cal-cell {
+    min-height: 74px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    user-select: none;
+}
+
+.rev-cal-cell.rev-cal-empty {
+    background: transparent;
+    border: 1px dashed rgba(150, 150, 150, 0.2);
+    opacity: 0.35;
+    cursor: default;
+}
+
+.rev-cal-cell:not(.rev-cal-empty):hover {
+    transform: translateY(-2px);
+    border-color: var(--primary);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+    z-index: 2;
+}
+
+.rev-cal-cell.has-revenue {
+    border-color: rgba(16, 185, 129, 0.35);
+    cursor: pointer;
+}
+
+.rev-cal-cell.is-today {
+    box-shadow: 0 0 0 2px var(--primary);
+}
+
+.rev-cal-cell-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.rev-cal-date-number {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    line-height: 1;
+}
+
+.rev-cal-cell.has-revenue .rev-cal-date-number {
+    color: var(--text-primary);
+}
+
+.rev-cal-today-pill {
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 10px;
+    background: var(--primary);
+    color: #fff;
+    letter-spacing: 0.4px;
+    line-height: 1.2;
+}
+
+.rev-cal-cell-body {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 4px;
+}
+
+.rev-cal-amount {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #059669;
+    letter-spacing: -0.2px;
+    line-height: 1.2;
+}
+
+.rev-cal-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.rev-cal-meta i {
+    font-size: 0.65rem;
+    opacity: 0.75;
+}
+
+.rev-cal-zero {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    opacity: 0.4;
+    text-align: center;
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+/* Calendar Bottom Legend */
+.rev-cal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+}
+
+.rev-cal-legend {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.rev-cal-legend-gradient {
+    width: 90px;
+    height: 8px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, rgba(16, 185, 129, 0.12) 0%, rgba(16, 185, 129, 0.8) 100%);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.rev-cal-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.rev-cal-indicator-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+@media (max-width: 768px) {
+    .rev-cal-grid {
+        gap: 4px;
+    }
+    .rev-cal-cell {
+        min-height: 58px;
+        padding: 4px 6px;
+    }
+    .rev-cal-date-number {
+        font-size: 0.72rem;
+    }
+    .rev-cal-amount {
+        font-size: 0.72rem;
+    }
+    .rev-cal-meta {
+        display: none;
+    }
+    .rev-cal-today-pill {
+        font-size: 0.52rem;
+        padding: 1px 4px;
+    }
+}
