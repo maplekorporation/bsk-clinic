@@ -2651,6 +2651,88 @@ footer {
     color: var(--primary);
 }
 
+.footer-copyright-text {
+    margin: 0;
+    color: #8E9FAA;
+    font-size: var(--fs-small);
+    line-height: 1.6;
+}
+
+.footer-developer {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-size: var(--fs-small);
+}
+
+.developer-prefix {
+    color: #8E9FAA;
+    font-weight: 400;
+    font-size: 0.82rem;
+    letter-spacing: 0.2px;
+}
+
+.developer-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 9999px;
+    color: #F1F5F9;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.82rem;
+    letter-spacing: 0.3px;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.developer-code-icon {
+    color: var(--secondary);
+    font-size: 0.75rem;
+    transition: transform 0.25s ease, color 0.25s ease;
+}
+
+.developer-name {
+    background: linear-gradient(135deg, #FFFFFF 20%, #BAE6FD 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    transition: all 0.25s ease;
+}
+
+.developer-external-icon {
+    font-size: 0.65rem;
+    color: #94A3B8;
+    transition: transform 0.25s ease, color 0.25s ease;
+}
+
+.developer-badge:hover {
+    background: rgba(15, 126, 168, 0.18);
+    border-color: rgba(15, 126, 168, 0.55);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(15, 126, 168, 0.25), 0 0 12px rgba(46, 196, 182, 0.2);
+}
+
+.developer-badge:hover .developer-code-icon {
+    color: #38BDF8;
+    transform: scale(1.15) rotate(-6deg);
+}
+
+.developer-badge:hover .developer-name {
+    background: linear-gradient(135deg, #FFFFFF 0%, #38BDF8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.developer-badge:hover .developer-external-icon {
+    color: #38BDF8;
+    transform: translate(2px, -2px);
+}
+
 /* ==========================================================================
    Login / Registration Page Styles
    ========================================================================== */
@@ -3684,6 +3766,10 @@ table {
         flex-direction: column;
         gap: 12px;
         text-align: center;
+    }
+
+    .footer-developer {
+        justify-content: center;
     }
     
     .footer-bottom-links {

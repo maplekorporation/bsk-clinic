@@ -1195,7 +1195,21 @@ function App() {
         </div>
         
         <div className="container footer-bottom">
-          <p>{t.footer.copyright}</p>
+          <p className="footer-copyright-text">{t.footer.copyright}</p>
+          <div className="footer-developer">
+            <span className="developer-prefix">{t.footer.developedBy}</span>
+            <a 
+              href="https://maple-site-sandy.vercel.app/" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="developer-badge"
+              title="Maple Korporation"
+            >
+              <i className="fa-solid fa-code developer-code-icon" aria-hidden="true"></i>
+              <span className="developer-name">Maple Korporation</span>
+              <i className="fa-solid fa-arrow-up-right-from-square developer-external-icon" aria-hidden="true"></i>
+            </a>
+          </div>
         </div>
       </footer>
         </>
@@ -2770,7 +2784,7 @@ function App() {
                       if (idStr.toLowerCase().includes(rawQ)) return true;
 
                       // Clean prefix like 'bkg-', 'inv-', '#', 'invoice'
-                      const cleanQ = rawQ.replace(/^(bkg|inv|invoice)[-\s]*/i, '').replace('#', '').trim();
+                      const cleanQ = rawQ.replace(/^(invoice|inv|bkg)[-\s]*/i, '').replace('#', '').trim();
                       if (cleanQ && idStr.toLowerCase().includes(cleanQ)) return true;
                       
                       // Padded ID match (e.g. '030')
@@ -2778,9 +2792,13 @@ function App() {
                       if (cleanQ && paddedId.includes(cleanQ)) return true;
 
                       // Extract trailing digits (e.g. from '2026-030' or 'bkg-2026-030')
-                      const numMatch = cleanQ.match(/\d+$/);
-                      if (numMatch) {
-                        const searchNum = parseInt(numMatch[0], 10);
+                      // Manual scan instead of a /\d+$/ regex to avoid O(n^2) backtracking on unanchored-start quantifiers.
+                      let trailingDigitsStart = cleanQ.length;
+                      while (trailingDigitsStart > 0 && cleanQ[trailingDigitsStart - 1] >= '0' && cleanQ[trailingDigitsStart - 1] <= '9') {
+                        trailingDigitsStart--;
+                      }
+                      if (trailingDigitsStart < cleanQ.length) {
+                        const searchNum = parseInt(cleanQ.slice(trailingDigitsStart), 10);
                         if (!isNaN(idNum) && !isNaN(searchNum) && idNum === searchNum) return true;
                       }
 

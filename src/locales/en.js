@@ -227,6 +227,7 @@ const en = {
     newsletterText: "Subscribe to receive Dr. Chowdhury's hearing health guides and pediatric speech milestone tips.",
     newsletterPlaceholder: 'Your email address',
     copyright: '© 2026 Baak o Shrobon Kendra. All Rights Reserved.',
+    developedBy: 'Developed & Maintained by',
     adminLink: 'Admin',
   },
 
