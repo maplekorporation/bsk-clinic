@@ -3193,8 +3193,11 @@ function App() {
 
                       {/* 7-column Calendar Grid */}
                       <div className="rev-cal-grid">
-                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                          <div className="rev-cal-day-header" key={d}>{d}</div>
+                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => (
+                          <div className="rev-cal-day-header" key={d}>
+                            <span className="cal-header-desktop">{d}</span>
+                            <span className="cal-header-mobile">{['S', 'M', 'T', 'W', 'T', 'F', 'S'][i]}</span>
+                          </div>
                         ))}
                         {/* Empty cells for starting day offset */}
                         {Array.from({ length: new Date(currentYear, currentMonth, 1).getDay() }, (_, i) => (
@@ -3219,16 +3222,23 @@ function App() {
                               title={`Day ${d.day} (${monthNames[currentMonth]} ${d.day}, ${currentYear})\nRevenue: ₹${d.revenue.toLocaleString('en-IN')}\nBookings: ${d.bookings}${d.bookings > 0 ? `\nAvg per booking: ₹${Math.round(d.revenue / d.bookings).toLocaleString('en-IN')}` : ''}`}
                             >
                               <div className="rev-cal-cell-top">
-                                <span className="rev-cal-date-number">{d.day}</span>
+                                <span className={`rev-cal-date-number ${isToday ? 'is-today-num' : ''}`}>{d.day}</span>
                                 {isToday && <span className="rev-cal-today-pill">Today</span>}
                               </div>
                               <div className="rev-cal-cell-body">
                                 {hasRevenue ? (
                                   <>
                                     <div className="rev-cal-amount">
-                                      ₹{d.revenue >= 100000 
-                                        ? `${(d.revenue / 1000).toFixed(0)}k` 
-                                        : d.revenue.toLocaleString('en-IN')}
+                                      <span className="rev-cal-amt-full">
+                                        ₹{d.revenue >= 100000 
+                                          ? `${(d.revenue / 1000).toFixed(0)}k` 
+                                          : d.revenue.toLocaleString('en-IN')}
+                                      </span>
+                                      <span className="rev-cal-amt-compact">
+                                        ₹{d.revenue >= 1000 
+                                          ? `${(d.revenue / 1000).toFixed(d.revenue >= 10000 || d.revenue % 1000 === 0 ? 0 : 1)}k` 
+                                          : d.revenue}
+                                      </span>
                                     </div>
                                     <div className="rev-cal-meta">
                                       <i className="fa-solid fa-user-check"></i> {d.bookings} {d.bookings === 1 ? 'bk' : 'bks'}

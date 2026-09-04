@@ -10516,6 +10516,22 @@ body.dark-mode .clinic-seal-placeholder {
     border-radius: 6px;
 }
 
+.cal-header-desktop {
+    display: inline;
+}
+
+.cal-header-mobile {
+    display: none;
+}
+
+.rev-cal-amt-full {
+    display: inline;
+}
+
+.rev-cal-amt-compact {
+    display: none;
+}
+
 .rev-cal-cell {
     min-height: 74px;
     padding: 8px 10px;
@@ -10660,25 +10676,118 @@ body.dark-mode .clinic-seal-placeholder {
     border-radius: 50%;
 }
 
+/* Mobile Optimizations */
 @media (max-width: 768px) {
+    .rev-cal-insights-bar {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+        padding: 8px 8px;
+    }
+
+    .rev-cal-insight-item {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 4px;
+    }
+
+    .rev-cal-insight-icon {
+        width: 28px;
+        height: 28px;
+        font-size: 0.75rem;
+        border-radius: 6px;
+    }
+
+    .rev-cal-insight-label {
+        font-size: 0.58rem;
+        letter-spacing: 0.2px;
+        line-height: 1.1;
+    }
+
+    .rev-cal-insight-value {
+        font-size: 0.72rem;
+        line-height: 1.1;
+    }
+
     .rev-cal-grid {
         gap: 4px;
     }
-    .rev-cal-cell {
-        min-height: 58px;
-        padding: 4px 6px;
+
+    .cal-header-desktop {
+        display: none;
     }
+
+    .cal-header-mobile {
+        display: inline;
+        font-weight: 700;
+        font-size: 0.72rem;
+    }
+
+    .rev-cal-cell {
+        min-height: 52px;
+        padding: 4px 2px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+    }
+
+    .rev-cal-cell-top {
+        justify-content: center;
+        width: 100%;
+    }
+
     .rev-cal-date-number {
         font-size: 0.72rem;
     }
-    .rev-cal-amount {
-        font-size: 0.72rem;
+
+    .rev-cal-date-number.is-today-num {
+        background: var(--primary);
+        color: #fff !important;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        line-height: 1;
     }
-    .rev-cal-meta {
+
+    .rev-cal-today-pill {
+        display: none !important;
+    }
+
+    .rev-cal-cell-body {
+        margin-top: 2px;
+        align-items: center;
+        text-align: center;
+    }
+
+    .rev-cal-amt-full {
         display: none;
     }
-    .rev-cal-today-pill {
-        font-size: 0.52rem;
-        padding: 1px 4px;
+
+    .rev-cal-amt-compact {
+        display: inline;
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: #059669;
+        line-height: 1.1;
+    }
+
+    .rev-cal-zero {
+        display: none !important;
+    }
+
+    .rev-cal-meta {
+        display: none !important;
+    }
+
+    .rev-cal-footer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        font-size: 0.7rem;
+        padding-top: 10px;
     }
 }
