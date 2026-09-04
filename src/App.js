@@ -1195,7 +1195,21 @@ function App() {
         </div>
         
         <div className="container footer-bottom">
-          <p>{t.footer.copyright}</p>
+          <p className="footer-copyright-text">{t.footer.copyright}</p>
+          <div className="footer-developer">
+            <span className="developer-prefix">{t.footer.developedBy}</span>
+            <a 
+              href="https://maple-site-sandy.vercel.app/" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="developer-badge"
+              title="Maple Korporation"
+            >
+              <i className="fa-solid fa-code developer-code-icon" aria-hidden="true"></i>
+              <span className="developer-name">Maple Korporation</span>
+              <i className="fa-solid fa-arrow-up-right-from-square developer-external-icon" aria-hidden="true"></i>
+            </a>
+          </div>
         </div>
       </footer>
         </>
