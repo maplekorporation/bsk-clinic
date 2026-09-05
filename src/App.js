@@ -1107,7 +1107,7 @@ function App() {
           <div className="contact-grid">
             <div className="contact-info-col reveal reveal-fade-right">
               <a 
-                href="https://maps.google.com/?q=Jangipur,+Murshidabad,+West+Bengal,+India+-+742223" 
+                href="https://maps.google.com/?q=Surakshya+Polyclinic,+Beside+Style+Bazar,+Ganga+Ghosh+Building,+Raghunathganj,+Murshidabad,+West+Bengal+-+742225" 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="info-box-link"
@@ -1144,7 +1144,7 @@ function App() {
             <div className="contact-map-col reveal reveal-fade-left">
               <div className="map-placeholder">
                 <iframe 
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d58989.56949319094!2d88.04036862294373!3d24.477436642395636!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39fb9871db0b72c1%3A0x4f5c67f8c47b2f35!2sJangipur%2C%20West%20Bengal%20742223!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin" 
+                  src="https://maps.google.com/maps?q=Surakshya+Polyclinic,+Beside+Style+Bazar,+Ganga+Ghosh+Building,+Raghunathganj,+West+Bengal+742225&t=&z=16&ie=UTF8&iwloc=&output=embed" 
                   allowFullScreen
                   loading="lazy" 
                   referrerPolicy="no-referrer-when-downgrade" 
@@ -3731,7 +3731,7 @@ function App() {
                       <h2 className="invoice-clinic-title">{t.nav.clinicName}</h2>
                       <p className="invoice-clinic-subtitle">{t.nav.logoSub}</p>
                       <p className="invoice-clinic-address-text">
-                        Jangipur, Murshidabad, West Bengal - 742223
+                        Surakshya Polyclinic, 2nd Floor, Ganga Ghosh Building, Beside Style Bazar, Raghunathganj, Murshidabad - 742225
                       </p>
                       <p className="invoice-clinic-contact-text">
                         Ph: +91 9674163040 | Email: avijitchoudhuryent79@gmail.com

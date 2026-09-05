@@ -13,5 +13,11 @@ export const CLINIC_CONFIG = {
   email: process.env.REACT_APP_CLINIC_EMAIL || "avijitchoudhuryent79@gmail.com",
   
   // The WhatsApp number (including country code, without '+' sign) for wa.me links
-  whatsappNumber: process.env.REACT_APP_CLINIC_WHATSAPP || "919674163040"
+  whatsappNumber: process.env.REACT_APP_CLINIC_WHATSAPP || "919674163040",
+
+  // Clinic address details
+  addressLine1: "Surakshya Polyclinic, 2nd Floor, Ganga Ghosh Building,",
+  addressLine2: "Beside Style Bazar, Raghunathganj, Murshidabad - 742225",
+  fullAddress: "Surakshya Polyclinic, 2nd Floor, Ganga Ghosh Building, Beside Style Bazar, Raghunathganj, Murshidabad - 742225"
 };
+

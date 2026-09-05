@@ -192,8 +192,8 @@ const en = {
     title: 'Get In Touch',
     subtitle: 'Have questions or need to schedule an appointment? Reach out to us directly.',
     addressTitle: 'Clinic Address',
-    addressLine1: 'Jangipur, Murshidabad,',
-    addressLine2: 'West Bengal, India - 742223',
+    addressLine1: 'Surakshya Polyclinic, 2nd Floor, Ganga Ghosh Building,',
+    addressLine2: 'Beside Style Bazar, Raghunathganj, Murshidabad - 742225',
     viewMap: 'View on Google Maps',
     timingsTitle: 'Clinic Timings',
     timingsLine1: 'Mon - Fri: 8:00 AM - 6:00 PM',
@@ -282,7 +282,7 @@ const en = {
       {
         role: 'Founder & Clinical Director',
         organization: 'Baak O Shrobon Speech and Hearing Clinic',
-        location: 'Jangipur, Murshidabad',
+        location: 'Raghunathganj, Murshidabad',
         period: '2026 – Present',
         highlights: [
           'Established a state-of-the-art specialized ENT and Audiology center providing all-in-one diagnostic and therapeutic services at accessible, low costs.',
