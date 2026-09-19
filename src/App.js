@@ -1236,7 +1236,7 @@ function App() {
           <div className="footer-developer">
             <span className="developer-prefix">{t.footer.developedBy}</span>
             <a 
-              href="https://maple-site-sandy.vercel.app/" 
+              href="https://www.maplekorporation.com/" 
               target="_blank" 
               rel="noopener noreferrer" 
               className="developer-badge"
