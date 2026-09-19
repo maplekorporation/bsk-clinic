@@ -8016,11 +8016,27 @@ body.dark-mode .portal-table-wrapper::-webkit-scrollbar-thumb:hover {
     display: inline-block;
 }
 
+.bookings-table-date-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
 .bookings-table-date {
     font-size: 0.9rem;
     color: var(--text-primary);
     font-weight: 500;
     white-space: nowrap;
+}
+
+.bookings-table-time {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    opacity: 0.85;
 }
 
 .bookings-table-patient-name {

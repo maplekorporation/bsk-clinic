@@ -351,6 +351,29 @@ function App() {
   const [portalBookingsPage, setPortalBookingsPage] = useState(1);
   const [overviewBookingsPage, setOverviewBookingsPage] = useState(1);
 
+  const formatBookingTime = (item) => {
+    if (!item) return '';
+    const val = typeof item === 'object' 
+      ? (item.createdAt || item.created_at || item.time || item.createdDate) 
+      : item;
+    if (!val) return '';
+    try {
+      let dateObj;
+      if (Array.isArray(val)) {
+        const [y, m, d, hr = 0, min = 0, sec = 0] = val;
+        dateObj = new Date(y, m - 1, d, hr, min, sec);
+      } else if (typeof val === 'string') {
+        dateObj = new Date(val.replace(' ', 'T'));
+      } else {
+        dateObj = new Date(val);
+      }
+      if (isNaN(dateObj.getTime())) return '';
+      return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+    } catch (e) {
+      return '';
+    }
+  };
+
   const sortedBookings = useMemo(() => {
     return [...bookingsList].sort((a, b) => {
       const idA = parseInt(a.id, 10);
@@ -379,6 +402,7 @@ function App() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [isSearchingPatient, setIsSearchingPatient] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [selectedServices, setSelectedServices] = useState([]);
   
@@ -439,24 +463,33 @@ function App() {
     }
   }, [hash]);
 
-  const handleSearchChange = async (e) => {
-    const query = e.target.value;
-    setSearchQuery(query);
-    if (!query.trim()) {
+  // Debounced API search for patients when query >= 2 characters
+  useEffect(() => {
+    const trimmed = searchQuery.trim();
+    if (trimmed.length < 2) {
       setSearchResults([]);
+      setIsSearchingPatient(false);
       return;
     }
-    try {
-      const results = await db.searchPatients(query);
-      setSearchResults(results || []);
-    } catch (err) {
-      console.error("Search error, falling back to local filtering:", err);
-      const filtered = patientsList.filter(
-        p => p.name.toLowerCase().includes(query.toLowerCase()) || 
-             p.phone.includes(query)
-      );
-      setSearchResults(filtered);
-    }
+
+    setIsSearchingPatient(true);
+    const timer = setTimeout(async () => {
+      try {
+        const results = await db.searchPatients(trimmed);
+        setSearchResults(results || []);
+      } catch (err) {
+        console.error("Patient search error:", err);
+        setSearchResults([]);
+      } finally {
+        setIsSearchingPatient(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
   };
 
   const handleSelectPatient = (patient) => {
@@ -1517,7 +1550,21 @@ function App() {
                     )}
                   </div>
 
-                  {searchResults.length > 0 && (
+                  {isSearchingPatient && (
+                    <div style={{ marginTop: '12px', fontSize: '0.88rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <i className="fa-solid fa-spinner fa-spin"></i>
+                      <span>Searching database...</span>
+                    </div>
+                  )}
+
+                  {searchQuery.trim().length === 1 && !selectedPatient && !isNewPatientForm && (
+                    <div style={{ marginTop: '10px', fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <i className="fa-solid fa-circle-info"></i>
+                      <span>Type at least 2 characters to search patients...</span>
+                    </div>
+                  )}
+
+                  {!isSearchingPatient && searchResults.length > 0 && (
                     <div className="search-results-list">
                       {searchResults.map(p => (
                         <div 
@@ -1536,7 +1583,7 @@ function App() {
                     </div>
                   )}
 
-                  {searchQuery.trim() && searchResults.length === 0 && !selectedPatient && !isNewPatientForm && (
+                  {searchQuery.trim().length >= 2 && !isSearchingPatient && searchResults.length === 0 && !selectedPatient && !isNewPatientForm && (
                     <div className="portal-alert portal-alert-warning">
                       <i className="fa-solid fa-triangle-exclamation"></i>
                       <div>
@@ -1767,11 +1814,14 @@ function App() {
             )}
 
             {portalTab === 'patients' && (() => {
-              const filteredPatients = patientsList.filter(p => 
-                !searchQuery.trim() || 
-                p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                p.phone.includes(searchQuery)
-              );
+              const filteredPatients = searchQuery.trim().length >= 2
+                ? searchResults
+                : searchQuery.trim()
+                  ? patientsList.filter(p => 
+                      p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                      p.phone.includes(searchQuery)
+                    )
+                  : patientsList;
               const maleCount = patientsList.filter(p => p.gender === 'Male').length;
               const femaleCount = patientsList.filter(p => p.gender === 'Female').length;
               const otherCount = patientsList.length - maleCount - femaleCount;
@@ -1903,7 +1953,6 @@ function App() {
                             <th>Age</th>
                             <th>Gender</th>
                             <th>Address</th>
-                            <th style={{ width: '60px', textAlign: 'center' }}>ID</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1940,9 +1989,6 @@ function App() {
                               <td>
                                 <span className="patient-address-cell">{p.address || '—'}</span>
                               </td>
-                              <td style={{ textAlign: 'center' }}>
-                                <code className="patient-id-badge">{p.id}</code>
-                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -1964,7 +2010,6 @@ function App() {
                                 </div>
                                 <div className="patient-card-name-id">
                                   <span className="patient-card-name">{p.name}</span>
-                                  <span className="patient-card-id">ID: {p.id}</span>
                                 </div>
                               </div>
                               <span className={`patient-gender-badge ${p.gender === 'Male' ? 'gender-male' : p.gender === 'Female' ? 'gender-female' : 'gender-other'}`}>
@@ -2024,7 +2069,7 @@ function App() {
                         <table className="portal-table bookings-table-premium">
                           <thead>
                             <tr>
-                              <th><i className="fa-solid fa-calendar-day"></i> Date</th>
+                              <th><i className="fa-solid fa-calendar-day"></i> Date & Time</th>
                               <th><i className="fa-solid fa-user"></i> Patient Name</th>
                               <th><i className="fa-solid fa-phone"></i> Contact</th>
                               <th><i className="fa-solid fa-briefcase-medical"></i> Services Billed</th>
@@ -2037,7 +2082,15 @@ function App() {
                             {paginatedPortalBookings.map(b => (
                               <tr key={b.id}>
                                 <td>
-                                  <span className="bookings-table-date">{b.date}</span>
+                                  <div className="bookings-table-date-cell">
+                                    <span style={{ fontWeight: '500' }}>{b.date}</span>
+                                    {formatBookingTime(b) && (
+                                      <span className="bookings-table-time">
+                                        <i className="fa-regular fa-clock"></i>
+                                        {formatBookingTime(b)}
+                                      </span>
+                                    )}
+                                  </div>
                                 </td>
                                 <td>
                                   <div className="bookings-table-patient-name">
@@ -2143,7 +2196,14 @@ function App() {
                             <div className="booking-card-body">
                               <div className="booking-card-info-row">
                                 <span className="info-label">Date:</span>
-                                <span className="info-value">{b.date}</span>
+                                <span className="info-value">
+                                  {b.date}
+                                  {formatBookingTime(b.createdAt) && (
+                                    <span style={{ marginLeft: '6px', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                                      • {formatBookingTime(b.createdAt)}
+                                    </span>
+                                  )}
+                                </span>
                               </div>
                               <div className="booking-card-info-row">
                                 <span className="info-label">Patient:</span>
@@ -2882,7 +2942,7 @@ function App() {
                           <table className="admin-table">
                             <thead>
                               <tr>
-                                <th>Date</th>
+                                <th>Date & Time</th>
                                 <th>Patient</th>
                                 <th>Services</th>
                                 <th>Total</th>
@@ -2893,7 +2953,17 @@ function App() {
                             <tbody>
                               {paginatedOverviewBookings.map(b => (
                                 <tr key={b.id}>
-                                  <td>{b.date}</td>
+                                  <td>
+                                    <div className="bookings-table-date-cell">
+                                      <span>{b.date}</span>
+                                      {formatBookingTime(b) && (
+                                        <span className="bookings-table-time">
+                                          <i className="fa-regular fa-clock"></i>
+                                          {formatBookingTime(b)}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </td>
                                   <td><strong>{b.patientName}</strong></td>
                                   <td>
                                     <div className="admin-services-tags">
@@ -3541,7 +3611,7 @@ function App() {
                         <table className="admin-table admin-bookings-table">
                           <thead>
                             <tr>
-                              <th>Date</th>
+                              <th>Date & Time</th>
                               <th>Patient Details</th>
                               <th>Services Billed</th>
                               <th>Total Amount</th>
@@ -3554,10 +3624,18 @@ function App() {
                             {paginatedAdminBookings.map(b => (
                               <tr key={b.id}>
                                 <td>
-                                  <span className="admin-date-cell">
-                                    <i className="fa-regular fa-calendar-days"></i>
-                                    {b.date}
-                                  </span>
+                                  <div className="bookings-table-date-cell">
+                                    <span className="admin-date-cell">
+                                      <i className="fa-regular fa-calendar-days"></i>
+                                      {b.date}
+                                    </span>
+                                    {formatBookingTime(b) && (
+                                      <span className="bookings-table-time" style={{ paddingLeft: '18px' }}>
+                                        <i className="fa-regular fa-clock"></i>
+                                        {formatBookingTime(b)}
+                                      </span>
+                                    )}
+                                  </div>
                                 </td>
                                 <td>
                                   <div className="admin-patient-cell">
@@ -3661,7 +3739,14 @@ function App() {
                             <div className="booking-card-body">
                               <div className="booking-card-info-row">
                                 <span className="info-label">Date:</span>
-                                <span className="info-value">{b.date}</span>
+                                <span className="info-value">
+                                  {b.date}
+                                  {formatBookingTime(b) && (
+                                    <span style={{ marginLeft: '6px', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                                      • {formatBookingTime(b)}
+                                    </span>
+                                  )}
+                                </span>
                               </div>
                               <div className="booking-card-info-row">
                                 <span className="info-label">Patient:</span>
