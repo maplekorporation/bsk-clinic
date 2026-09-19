@@ -107,6 +107,19 @@ function App() {
   const [adminPeriodFilter, setAdminPeriodFilter] = useState('today');
   const [overviewBookingIdSearch, setOverviewBookingIdSearch] = useState('');
 
+  // ── Admin Services Management State ──
+  const [adminServicesList, setAdminServicesList] = useState([]);
+  const [adminServiceCategoryFilter, setAdminServiceCategoryFilter] = useState('ALL');
+  const [adminServiceSearch, setAdminServiceSearch] = useState('');
+  const [serviceModalOpen, setServiceModalOpen] = useState(false);
+  const [serviceModalMode, setServiceModalMode] = useState('add'); // 'add' | 'edit'
+  const [editingService, setEditingService] = useState(null);
+  const [serviceForm, setServiceForm] = useState({ name: '', price: '', category: '', perSession: false, isVariablePrice: false });
+  const [deleteServiceConfirm, setDeleteServiceConfirm] = useState(null);
+  const [inlineEditingServiceId, setInlineEditingServiceId] = useState(null);
+  const [inlinePriceValue, setInlinePriceValue] = useState('');
+  const [serviceNotice, setServiceNotice] = useState(null);
+
   useEffect(() => {
     setOverviewBookingsPage(1);
   }, [adminPeriodFilter, overviewBookingIdSearch]);
@@ -382,6 +395,8 @@ function App() {
   });
 
   const [activeInvoice, setActiveInvoice] = useState(null);
+  const [emptyPriceAlert, setEmptyPriceAlert] = useState(null);
+  const [quickModalPrice, setQuickModalPrice] = useState('');
   const [dashboardStats, setDashboardStats] = useState(null);
 
   // Fetch initial portal data
@@ -399,6 +414,8 @@ function App() {
         if (db.getRole() === 'ADMIN') {
           const stats = await db.getDashboardStats();
           setDashboardStats(stats);
+          const allSvcs = await db.getAllServices();
+          setAdminServicesList(allSvcs || []);
         }
       } catch (err) {
         console.error("Error loading portal data", err);
@@ -454,13 +471,16 @@ function App() {
     if (isSelected) {
       setSelectedServices(selectedServices.filter(s => s.id !== service.id));
     } else {
-      setSelectedServices([...selectedServices, { ...service, customPrice: service.price }]);
+      const isVariable = service.isVariablePrice || service.category === 'Hearing Aid Services' || service.category === 'Consultation' || (service.name && (service.name.toLowerCase().includes('hearing aid') || service.name.toLowerCase().includes('consultan')));
+      const initialPrice = isVariable ? '' : (service.price || 0);
+      setSelectedServices([...selectedServices, { ...service, customPrice: initialPrice, price: initialPrice }]);
     }
   };
 
   const handleServicePriceChange = (serviceId, newPrice) => {
+    const priceVal = newPrice === '' ? '' : (Number(newPrice) || 0);
     setSelectedServices(prev =>
-      prev.map(s => s.id === serviceId ? { ...s, customPrice: newPrice } : s)
+      prev.map(s => s.id === serviceId ? { ...s, customPrice: priceVal, price: priceVal } : s)
     );
   };
 
@@ -507,6 +527,17 @@ function App() {
       return;
     }
 
+    // Check if any service has empty or zero amount - Empty amount cannot be submitted
+    const emptyService = selectedServices.find(s => {
+      const priceVal = s.customPrice !== undefined ? s.customPrice : s.price;
+      return priceVal === '' || priceVal === null || priceVal === undefined || Number(priceVal) <= 0;
+    });
+    if (emptyService) {
+      setEmptyPriceAlert(emptyService);
+      setQuickModalPrice('');
+      return;
+    }
+
     try {
       let patientObj = selectedPatient;
       if (isNewPatientForm) {
@@ -527,7 +558,10 @@ function App() {
         setPatientsList(updatedPatients);
       }
 
-      const subtotal = selectedServices.reduce((acc, s) => acc + (s.customPrice ?? s.price), 0);
+      const subtotal = selectedServices.reduce((acc, s) => {
+        const p = s.customPrice !== undefined && s.customPrice !== '' ? Number(s.customPrice) : Number(s.price || 0);
+        return acc + p;
+      }, 0);
       const gst = 0;
       const total = subtotal;
 
@@ -538,7 +572,10 @@ function App() {
         patientAge: patientObj.age,
         patientGender: patientObj.gender,
         patientAddress: patientObj.address,
-        services: selectedServices.map(s => ({ name: s.name, price: s.customPrice ?? s.price })),
+        services: selectedServices.map(s => ({
+          name: s.name,
+          price: s.customPrice !== undefined && s.customPrice !== '' ? Number(s.customPrice) : Number(s.price || 0)
+        })),
         subtotal,
         gst,
         total,
@@ -720,7 +757,7 @@ function App() {
           
           <div className="hero-image-container reveal reveal-scale-in active">
             <div className="hero-image-wrapper">
-              <img src="dr_avijit_chowdhury.png" alt="Dr. Avijit Chowdhury - Chief Otolaryngologist at Baak o Shrobon Kendra" loading="eager" />
+              <img src="dr_avijit_chowdhury.png" alt="Dr. Avijit Choudhury - Chief Otolaryngologist at Baak o Shrobon Kendra" loading="eager" />
             </div>
             
             <div className="hero-floating-card hero-floating-card-1">
@@ -741,7 +778,7 @@ function App() {
         <div className="container about-grid">
           <div className="about-images reveal reveal-fade-left">
             <div className="about-img-box about-img-box-1">
-              <img src="speech_therapy.png" alt="Dr. Avijit Chowdhury and speech therapist consulting a patient at Baak o Shrobon Kendra" />
+              <img src="speech_therapy.png" alt="Dr. Avijit Choudhury and speech therapist consulting a patient at Baak o Shrobon Kendra" />
             </div>
             <div className="about-img-box about-img-box-2">
               <img src="hearing_test.png" alt="Modern audiometry equipment and hearing test session in progress" />
@@ -1107,7 +1144,7 @@ function App() {
           <div className="contact-grid">
             <div className="contact-info-col reveal reveal-fade-right">
               <a 
-                href="https://maps.google.com/?q=Surakshya+Polyclinic,+Beside+Style+Bazar,+Ganga+Ghosh+Building,+Raghunathganj,+Murshidabad,+West+Bengal+-+742225" 
+                href="https://maps.app.goo.gl/UDdZSJ1otNjWZRv1A" 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="info-box-link"
@@ -1128,7 +1165,7 @@ function App() {
                 <div className="info-box-icon"><i className="fa-solid fa-clock" aria-hidden="true"></i></div>
                 <div className="info-box-details">
                   <h4>{t.contact.timingsTitle}</h4>
-                  <p>{t.contact.timingsLine1}<br />{t.contact.timingsLine2}</p>
+                  <p>{t.contact.timingsLine1}{t.contact.timingsLine2 ? <><br />{t.contact.timingsLine2}</> : null}</p>
                 </div>
               </div>
 
@@ -1136,7 +1173,7 @@ function App() {
                 <div className="info-box-icon"><i className="fa-solid fa-headset" aria-hidden="true"></i></div>
                 <div className="info-box-details">
                   <h4>{t.contact.quickContactTitle}</h4>
-                  <p><strong>{t.contact.phoneLabel}</strong> <a href="tel:+919674163040">+91 9674163040</a><br /><strong>{t.contact.emailLabel}</strong> <a href="mailto:avijitchoudhuryent79@gmail.com">avijitchoudhuryent79@gmail.com</a></p>
+                  <p><strong>{t.contact.phoneLabel}</strong> <a href="tel:+919999999999">+91 9999999999</a></p>
                 </div>
               </div>
             </div>
@@ -1144,11 +1181,11 @@ function App() {
             <div className="contact-map-col reveal reveal-fade-left">
               <div className="map-placeholder">
                 <iframe 
-                  src="https://maps.google.com/maps?q=Surakshya+Polyclinic,+Beside+Style+Bazar,+Ganga+Ghosh+Building,+Raghunathganj,+West+Bengal+742225&t=&z=16&ie=UTF8&iwloc=&output=embed" 
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3637.288673891465!2d88.0585443760338!3d24.460543078190776!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39fa36f7669d39a3%3A0xfb537ad6fd84adce!2ssuraksha%20polyclinic%20%26%20diagnostic%20centre!5e0!3m2!1sen!2sin!4v1710000000000!5m2!1sen!2sin" 
                   allowFullScreen
                   loading="lazy" 
                   referrerPolicy="no-referrer-when-downgrade" 
-                  title="Baak o Shrobon Kendra Location Map"
+                  title="Suraksha Polyclinic & Diagnostic Centre Location Map"
                 ></iframe>
               </div>
             </div>
@@ -1646,7 +1683,7 @@ function App() {
                       <input 
                         type="text" 
                         className="form-control" 
-                        placeholder="Referred Doctor's Name (e.g. Dr. A. Chowdhury)" 
+                        placeholder="Referred Doctor's Name (e.g. Dr. A. Choudhury)" 
                         value={referredBy}
                         onChange={(e) => setReferredBy(e.target.value)}
                       />
@@ -1699,7 +1736,10 @@ function App() {
                       <div className="billing-calc-box">
                         <div className="billing-calc-row grand-total">
                           <span>Total Amount:</span>
-                          <span>₹{selectedServices.reduce((acc, s) => acc + (s.customPrice ?? s.price), 0).toLocaleString('en-IN')}</span>
+                          <span>₹{selectedServices.reduce((acc, s) => {
+                            const p = s.customPrice !== undefined && s.customPrice !== '' ? Number(s.customPrice) : Number(s.price || 0);
+                            return acc + p;
+                          }, 0).toLocaleString('en-IN')}</span>
                         </div>
                       </div>
 
@@ -2426,6 +2466,17 @@ function App() {
               >
                 <i className="fa-solid fa-indian-rupee-sign"></i>
                 <span>Revenue</span>
+              </button>
+              <button 
+                className={`admin-tab-btn ${adminTab === 'services' ? 'active' : ''}`}
+                onClick={() => {
+                  setAdminTab('services');
+                  // Load services list for admin
+                  db.getAllServices().then(svcs => setAdminServicesList(svcs)).catch(console.error);
+                }}
+              >
+                <i className="fa-solid fa-briefcase-medical"></i>
+                <span>Services</span>
               </button>
             </div>
 
@@ -3701,10 +3752,761 @@ function App() {
                 )}
               </div>
             )}
+
+            {/* ===== SERVICES MANAGEMENT TAB ===== */}
+            {adminTab === 'services' && (() => {
+              const svcCategories = ['ALL', ...Array.from(new Set(adminServicesList.map(s => s.category).filter(Boolean)))];
+              const filteredSvcs = adminServicesList.filter(s => {
+                const matchesCat = adminServiceCategoryFilter === 'ALL' || s.category === adminServiceCategoryFilter;
+                const q = adminServiceSearch.trim().toLowerCase();
+                const matchesQ = !q || s.name.toLowerCase().includes(q) || (s.category && s.category.toLowerCase().includes(q));
+                return matchesCat && matchesQ;
+              });
+              const activeCount = adminServicesList.filter(s => s.isActive !== false).length;
+              const categoryCount = new Set(adminServicesList.map(s => s.category).filter(Boolean)).size;
+              const avgPrice = adminServicesList.length > 0
+                ? Math.round(adminServicesList.filter(s => !s.isVariablePrice).reduce((sum, s) => sum + s.price, 0) / Math.max(adminServicesList.filter(s => !s.isVariablePrice).length, 1))
+                : 0;
+
+              const openAddModal = () => {
+                setServiceModalMode('add');
+                setEditingService(null);
+                setServiceForm({ name: '', price: '', category: '', perSession: false, isVariablePrice: false });
+                setServiceModalOpen(true);
+              };
+              const openEditModal = (srv) => {
+                setServiceModalMode('edit');
+                setEditingService(srv);
+                setServiceForm({ name: srv.name, price: srv.price, category: srv.category || '', perSession: !!srv.perSession, isVariablePrice: !!srv.isVariablePrice });
+                setServiceModalOpen(true);
+              };
+              const handleSaveService = async () => {
+                const trimName = serviceForm.name.trim();
+                const trimCat = serviceForm.category.trim();
+                if (!trimName || !trimCat) return;
+                const price = serviceForm.isVariablePrice ? 0 : (parseInt(serviceForm.price, 10) || 0);
+
+                try {
+                  let updatedList;
+                  if (serviceModalMode === 'edit' && editingService) {
+                    const updatedService = {
+                      ...editingService,
+                      name: trimName,
+                      price,
+                      category: trimCat,
+                      perSession: serviceForm.perSession,
+                      isVariablePrice: serviceForm.isVariablePrice,
+                    };
+                    updatedList = await db.saveService(updatedService);
+                    setServiceNotice(`Service "${trimName}" updated successfully (Price: ₹${price}).`);
+                  } else {
+                    const maxNum = adminServicesList.reduce((max, s) => { const m = String(s.id).match(/^srv_(\d+)$/); return m ? Math.max(max, parseInt(m[1], 10)) : max; }, 0);
+                    const newSrv = {
+                      id: `srv_${maxNum + 1}`,
+                      name: trimName,
+                      price,
+                      category: trimCat,
+                      perSession: serviceForm.perSession,
+                      isVariablePrice: serviceForm.isVariablePrice,
+                      isActive: true,
+                    };
+                    updatedList = await db.saveService(newSrv);
+                    setServiceNotice(`New service "${trimName}" added to catalog.`);
+                  }
+
+                  setAdminServicesList(updatedList);
+                  setCatalogServices(updatedList.filter(s => s.isActive !== false));
+                  setServiceModalOpen(false);
+                  setEditingService(null);
+                  setTimeout(() => setServiceNotice(null), 4000);
+                } catch (err) {
+                  alert(`Failed to save service: ${err.message}`);
+                }
+              };
+
+              const handleSaveInlinePrice = async (srvId) => {
+                const priceNum = Math.max(0, parseInt(inlinePriceValue, 10) || 0);
+                const target = adminServicesList.find(s => s.id === srvId);
+                try {
+                  const updatedList = await db.updateServicePrice(srvId, priceNum);
+                  setAdminServicesList(updatedList);
+                  setCatalogServices(updatedList.filter(s => s.isActive !== false));
+                  setInlineEditingServiceId(null);
+                  setServiceNotice(`Price for "${target?.name || 'Service'}" updated to ₹${priceNum.toLocaleString('en-IN')}.`);
+                  setTimeout(() => setServiceNotice(null), 4000);
+                } catch (err) {
+                  alert(`Failed to update price: ${err.message}`);
+                }
+              };
+
+              const handleDeleteService = async (id) => {
+                const target = adminServicesList.find(s => s.id === id);
+                try {
+                  const updatedList = await db.deleteService(id);
+                  setAdminServicesList(updatedList);
+                  setCatalogServices(updatedList.filter(s => s.isActive !== false));
+                  setDeleteServiceConfirm(null);
+                  setServiceNotice(`Service "${target?.name || 'Service'}" removed from catalog.`);
+                  setTimeout(() => setServiceNotice(null), 4000);
+                } catch (err) {
+                  alert(`Failed to delete service: ${err.message}`);
+                }
+              };
+
+              const handleToggleActive = async (id) => {
+                try {
+                  const updatedList = await db.toggleServiceActive(id);
+                  const target = updatedList.find(s => s.id === id);
+                  setAdminServicesList(updatedList);
+                  setCatalogServices(updatedList.filter(s => s.isActive !== false));
+                  setServiceNotice(`Service "${target?.name}" is now ${target?.isActive !== false ? 'Active' : 'Inactive'}.`);
+                  setTimeout(() => setServiceNotice(null), 3000);
+                } catch (err) {
+                  alert(`Failed to toggle status: ${err.message}`);
+                }
+              };
+
+              return (
+              <div className="admin-tab-content animate-fade-in">
+                <div className="admin-view-header">
+                  <div>
+                    <h2 className="admin-view-title">
+                      <i className="fa-solid fa-briefcase-medical"></i> Service Catalog
+                    </h2>
+                    <span className="admin-count-badge">
+                      {activeCount} of {adminServicesList.length} services active
+                    </span>
+                  </div>
+                  <button
+                    className="btn btn-primary"
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', padding: '10px 20px', borderRadius: '10px' }}
+                    onClick={openAddModal}
+                  >
+                    <i className="fa-solid fa-plus"></i> Add Service
+                  </button>
+                </div>
+
+                {/* Service Update Notice Banner */}
+                {serviceNotice && (
+                  <div style={{
+                    background: 'rgba(16, 185, 129, 0.1)',
+                    border: '1.5px solid #10b981',
+                    color: '#047857',
+                    padding: '12px 20px',
+                    borderRadius: '12px',
+                    marginBottom: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    fontSize: '0.92rem',
+                    fontWeight: 600,
+                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.1)',
+                    animation: 'modalSlideUp 0.25s ease'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <i className="fa-solid fa-circle-check" style={{ color: '#10b981', fontSize: '1.2rem' }}></i>
+                      <span>{serviceNotice}</span>
+                    </div>
+                    <button
+                      onClick={() => setServiceNotice(null)}
+                      style={{ background: 'none', border: 'none', color: '#047857', cursor: 'pointer', fontSize: '1rem', padding: '4px 8px' }}
+                      aria-label="Close notification"
+                    >
+                      <i className="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+                )}
+
+                {/* KPI Metrics Row */}
+                <div className="admin-kpi-grid" style={{ marginBottom: '24px' }}>
+                  <div className="admin-kpi-card kpi-patients">
+                    <div className="kpi-icon-bg"><i className="fa-solid fa-layer-group"></i></div>
+                    <div className="kpi-content">
+                      <span className="kpi-value">{adminServicesList.length}</span>
+                      <span className="kpi-label">Total Services</span>
+                    </div>
+                    <div className="kpi-footer">
+                      <span><i className="fa-solid fa-database"></i> In catalog</span>
+                    </div>
+                  </div>
+
+                  <div className="admin-kpi-card kpi-bookings">
+                    <div className="kpi-icon-bg"><i className="fa-solid fa-circle-check"></i></div>
+                    <div className="kpi-content">
+                      <span className="kpi-value">{activeCount}</span>
+                      <span className="kpi-label">Active Services</span>
+                    </div>
+                    <div className="kpi-footer">
+                      <span><i className="fa-solid fa-calendar-check"></i> Available to book</span>
+                    </div>
+                  </div>
+
+                  <div className="admin-kpi-card kpi-revenue">
+                    <div className="kpi-icon-bg"><i className="fa-solid fa-tags"></i></div>
+                    <div className="kpi-content">
+                      <span className="kpi-value">{categoryCount}</span>
+                      <span className="kpi-label">Categories</span>
+                    </div>
+                    <div className="kpi-footer">
+                      <span><i className="fa-solid fa-folder-tree"></i> Clinical groupings</span>
+                    </div>
+                  </div>
+
+                  <div className="admin-kpi-card kpi-avg">
+                    <div className="kpi-icon-bg"><i className="fa-solid fa-indian-rupee-sign"></i></div>
+                    <div className="kpi-content">
+                      <span className="kpi-value">₹{avgPrice.toLocaleString('en-IN')}</span>
+                      <span className="kpi-label">Avg. Service Price</span>
+                    </div>
+                    <div className="kpi-footer">
+                      <span><i className="fa-solid fa-calculator"></i> Base rates average</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Search + Category Filters */}
+                <div className="admin-analytics-card" style={{ marginBottom: '20px', padding: '16px 20px' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center', marginBottom: '14px' }}>
+                    <div style={{ position: 'relative', flex: '1 1 260px', maxWidth: '400px' }}>
+                      <i className="fa-solid fa-magnifying-glass" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)', fontSize: '0.85rem' }}></i>
+                      <input
+                        type="text"
+                        placeholder="Search services by name or category..."
+                        value={adminServiceSearch}
+                        onChange={e => setAdminServiceSearch(e.target.value)}
+                        className="admin-service-search-input"
+                      />
+                    </div>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                      {filteredSvcs.length} of {adminServicesList.length} services
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {svcCategories.map(cat => (
+                      <button
+                        key={cat}
+                        type="button"
+                        className={`service-cat-chip ${adminServiceCategoryFilter === cat ? 'active' : ''}`}
+                        onClick={() => setAdminServiceCategoryFilter(cat)}
+                        style={{ fontSize: '0.8rem', padding: '5px 14px' }}
+                      >
+                        {cat === 'ALL' ? 'All' : cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Services Table (Desktop) / Cards (Mobile) */}
+                {filteredSvcs.length === 0 ? (
+                  <div className="admin-empty-state">
+                    <i className="fa-solid fa-briefcase-medical"></i>
+                    <h3>No Services Found</h3>
+                    <p>Try adjusting your search or filters.</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="admin-analytics-card services-desktop-view" style={{ padding: 0, overflow: 'hidden' }}>
+                      <div className="admin-table-wrapper">
+                        <table className="admin-table">
+                          <thead>
+                            <tr>
+                              <th style={{ width: '50px' }}>#</th>
+                              <th>Service Name</th>
+                              <th>Category</th>
+                              <th style={{ textAlign: 'right' }}>Price (₹)</th>
+                              <th style={{ textAlign: 'center' }}>Flags</th>
+                              <th style={{ textAlign: 'center' }}>Status</th>
+                              <th style={{ textAlign: 'center' }}>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {filteredSvcs.map((srv, idx) => (
+                              <tr key={srv.id} style={{ opacity: srv.isActive === false ? 0.5 : 1 }}>
+                                <td style={{ color: 'var(--text-tertiary)', fontSize: '0.8rem' }}>{idx + 1}</td>
+                                <td><strong>{srv.name}</strong></td>
+                                <td>
+                                  <span className="service-option-cat-tag" style={{ fontSize: '0.75rem' }}>{srv.category}</span>
+                                </td>
+                                <td style={{ textAlign: 'right', fontWeight: 600 }}>
+                                  {srv.isVariablePrice ? (
+                                    <span style={{ color: 'var(--text-tertiary)', fontStyle: 'italic', fontWeight: 400 }}>Variable</span>
+                                  ) : inlineEditingServiceId === srv.id ? (
+                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', justifyContent: 'flex-end' }}>
+                                      <span style={{ fontWeight: 700, color: '#0F7EA8' }}>₹</span>
+                                      <input
+                                        type="number"
+                                        value={inlinePriceValue}
+                                        onChange={e => setInlinePriceValue(e.target.value)}
+                                        onKeyDown={e => {
+                                          if (e.key === 'Enter') handleSaveInlinePrice(srv.id);
+                                          if (e.key === 'Escape') setInlineEditingServiceId(null);
+                                        }}
+                                        autoFocus
+                                        min="0"
+                                        style={{
+                                          width: '85px',
+                                          padding: '4px 8px',
+                                          border: '2px solid #0F7EA8',
+                                          borderRadius: '6px',
+                                          fontSize: '0.92rem',
+                                          fontWeight: 700,
+                                          textAlign: 'right',
+                                          outline: 'none',
+                                          background: '#ffffff',
+                                          color: '#1e293b'
+                                        }}
+                                      />
+                                      <button
+                                        type="button"
+                                        className="admin-table-action-btn"
+                                        style={{ color: '#10b981', padding: '4px 8px', background: 'rgba(16, 185, 129, 0.1)' }}
+                                        onClick={() => handleSaveInlinePrice(srv.id)}
+                                        title="Save Price"
+                                      >
+                                        <i className="fa-solid fa-check"></i>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="admin-table-action-btn"
+                                        style={{ color: '#ef4444', padding: '4px 8px', background: 'rgba(239, 68, 68, 0.1)' }}
+                                        onClick={() => setInlineEditingServiceId(null)}
+                                        title="Cancel"
+                                      >
+                                        <i className="fa-solid fa-xmark"></i>
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div
+                                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', padding: '3px 8px', borderRadius: '6px', transition: 'background 0.15s' }}
+                                      onClick={() => {
+                                        setInlineEditingServiceId(srv.id);
+                                        setInlinePriceValue(String(srv.price ?? ''));
+                                      }}
+                                      title="Click to quick-edit price"
+                                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(15, 126, 168, 0.08)'}
+                                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                    >
+                                      <span>₹{Number(srv.price).toLocaleString('en-IN')}{srv.perSession ? <span style={{ fontWeight: 400, color: 'var(--text-secondary)', fontSize: '0.8rem' }}>/session</span> : ''}</span>
+                                      <i className="fa-solid fa-pen" style={{ fontSize: '0.72rem', color: '#0F7EA8', opacity: 0.6 }}></i>
+                                    </div>
+                                  )}
+                                </td>
+                                <td style={{ textAlign: 'center' }}>
+                                  <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                    {srv.perSession && <span className="admin-payment-badge" style={{ background: 'rgba(99,102,241,0.1)', color: '#6366f1', fontSize: '0.7rem', padding: '2px 8px' }}>Per Session</span>}
+                                    {srv.isVariablePrice && <span className="admin-payment-badge" style={{ background: 'rgba(245,158,11,0.1)', color: '#f59e0b', fontSize: '0.7rem', padding: '2px 8px' }}>Variable</span>}
+                                    {!srv.perSession && !srv.isVariablePrice && <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem' }}>—</span>}
+                                  </div>
+                                </td>
+                                <td style={{ textAlign: 'center' }}>
+                                  <button
+                                    type="button"
+                                    className={`admin-service-status-toggle ${srv.isActive !== false ? 'active' : ''}`}
+                                    onClick={() => handleToggleActive(srv.id)}
+                                    title={srv.isActive !== false ? 'Click to deactivate' : 'Click to activate'}
+                                  >
+                                    <span className="toggle-knob"></span>
+                                    <span className="toggle-label">{srv.isActive !== false ? 'Active' : 'Inactive'}</span>
+                                  </button>
+                                </td>
+                                <td style={{ textAlign: 'center' }}>
+                                  <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                                    <button className="admin-table-action-btn" onClick={() => openEditModal(srv)} title="Edit Service">
+                                      <i className="fa-solid fa-pen-to-square"></i>
+                                    </button>
+                                    <button className="admin-table-action-btn" style={{ color: '#ef4444' }} onClick={() => setDeleteServiceConfirm(srv)} title="Delete Service">
+                                      <i className="fa-solid fa-trash-can"></i>
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Mobile Cards View */}
+                    <div className="services-mobile-view">
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {filteredSvcs.map(srv => (
+                          <div key={srv.id} className="admin-analytics-card" style={{ padding: '16px', opacity: srv.isActive === false ? 0.55 : 1 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                              <div>
+                                <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)' }}>{srv.name}</h4>
+                                <span className="service-option-cat-tag" style={{ fontSize: '0.7rem', marginTop: '4px', display: 'inline-block' }}>{srv.category}</span>
+                              </div>
+                              <button
+                                type="button"
+                                className={`admin-service-status-toggle ${srv.isActive !== false ? 'active' : ''}`}
+                                onClick={() => handleToggleActive(srv.id)}
+                                style={{ transform: 'scale(0.85)' }}
+                              >
+                                <span className="toggle-knob"></span>
+                              </button>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--primary)' }}>
+                                {srv.isVariablePrice ? <span style={{ fontStyle: 'italic', fontWeight: 400, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Variable Price</span> : <>₹{Number(srv.price).toLocaleString('en-IN')}{srv.perSession ? <span style={{ fontWeight: 400, fontSize: '0.75rem', color: 'var(--text-secondary)' }}>/session</span> : ''}</>}
+                              </div>
+                              <div style={{ display: 'flex', gap: '8px' }}>
+                                <button className="admin-table-action-btn" onClick={() => openEditModal(srv)} style={{ padding: '6px 10px' }}><i className="fa-solid fa-pen-to-square"></i></button>
+                                <button className="admin-table-action-btn" style={{ color: '#ef4444', padding: '6px 10px' }} onClick={() => setDeleteServiceConfirm(srv)}><i className="fa-solid fa-trash-can"></i></button>
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
+                              {srv.perSession && <span className="admin-payment-badge" style={{ background: 'rgba(99,102,241,0.1)', color: '#6366f1', fontSize: '0.65rem', padding: '2px 8px' }}>Per Session</span>}
+                              {srv.isVariablePrice && <span className="admin-payment-badge" style={{ background: 'rgba(245,158,11,0.1)', color: '#f59e0b', fontSize: '0.65rem', padding: '2px 8px' }}>Variable</span>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Add/Edit Service Modal */}
+                {serviceModalOpen && (
+                  <div className="invoice-modal-overlay" onClick={() => setServiceModalOpen(false)}>
+                    <div className="admin-service-modal" onClick={e => e.stopPropagation()}>
+                      <div className="admin-service-modal-header">
+                        <div className="admin-service-modal-header-left">
+                          <div className="admin-service-modal-badge">
+                            <i className={`fa-solid ${serviceModalMode === 'edit' ? 'fa-pen-to-square' : 'fa-stethoscope'}`}></i>
+                          </div>
+                          <div className="admin-service-modal-title-wrap">
+                            <h3>{serviceModalMode === 'edit' ? 'Edit Service' : 'Add New Service'}</h3>
+                            <p>{serviceModalMode === 'edit' ? 'Update clinical service parameters & pricing' : 'Create a new clinical service for booking & billing'}</p>
+                          </div>
+                        </div>
+                        <button onClick={() => setServiceModalOpen(false)} className="admin-service-modal-close" aria-label="Close modal">
+                          <i className="fa-solid fa-xmark"></i>
+                        </button>
+                      </div>
+
+                      <div className="admin-service-modal-body">
+                        {/* Service Name */}
+                        <div className="admin-service-form-group">
+                          <label>
+                            Service Name <span className="req-star">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Pure Tone Audiometry"
+                            value={serviceForm.name}
+                            onChange={e => setServiceForm(f => ({ ...f, name: e.target.value }))}
+                            autoFocus
+                          />
+                        </div>
+
+                        {/* Category */}
+                        <div className="admin-service-form-group">
+                          <label>
+                            Category <span className="req-star">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Type or pick a category below"
+                            value={serviceForm.category}
+                            onChange={e => setServiceForm(f => ({ ...f, category: e.target.value }))}
+                            list="service-category-suggestions"
+                          />
+                          <datalist id="service-category-suggestions">
+                            {[...new Set(adminServicesList.map(s => s.category).filter(Boolean))].map(cat => (
+                              <option key={cat} value={cat} />
+                            ))}
+                          </datalist>
+
+                          {/* Quick Category Suggestion Pills */}
+                          <div className="admin-category-quick-pills">
+                            <span className="admin-quick-pills-label">Quick select:</span>
+                            {[...new Set(adminServicesList.map(s => s.category).filter(Boolean))].map(cat => (
+                              <button
+                                key={cat}
+                                type="button"
+                                className={`admin-category-pill-btn ${serviceForm.category === cat ? 'selected' : ''}`}
+                                onClick={() => setServiceForm(f => ({ ...f, category: cat }))}
+                              >
+                                {cat}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Price Field */}
+                        <div className="admin-service-form-group">
+                          <label>
+                            Base Price
+                            {serviceForm.isVariablePrice && (
+                              <span className="admin-price-note">(Variable Pricing Enabled)</span>
+                            )}
+                          </label>
+                          <div className={`admin-input-currency-wrapper ${serviceForm.isVariablePrice ? 'disabled' : ''}`}>
+                            <span className="admin-input-currency-prefix">₹</span>
+                            <input
+                              type="number"
+                              placeholder={serviceForm.isVariablePrice ? 'Determined at booking' : '0'}
+                              value={serviceForm.isVariablePrice ? '' : serviceForm.price}
+                              onChange={e => setServiceForm(f => ({ ...f, price: e.target.value }))}
+                              disabled={serviceForm.isVariablePrice}
+                              min="0"
+                            />
+                          </div>
+                          {serviceForm.isVariablePrice && (
+                            <p className="admin-field-helper-info">
+                              <i className="fa-solid fa-circle-info"></i> Receptionist will set the price dynamically during booking/billing.
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Interactive Option Cards */}
+                        <div className="admin-option-cards-grid">
+                          <div
+                            className={`admin-option-card ${serviceForm.perSession ? 'selected' : ''}`}
+                            onClick={() => setServiceForm(f => ({ ...f, perSession: !f.perSession }))}
+                            role="button"
+                            tabIndex={0}
+                          >
+                            <div className="admin-option-card-icon">
+                              <i className="fa-solid fa-clock-rotate-left"></i>
+                            </div>
+                            <div className="admin-option-card-content">
+                              <div className="admin-option-card-title">Per-Session Pricing</div>
+                              <div className="admin-option-card-desc">Appends "/session" on patient receipts & booking</div>
+                            </div>
+                            <div className="admin-option-card-checkbox">
+                              <input
+                                type="checkbox"
+                                checked={serviceForm.perSession}
+                                onChange={() => {}}
+                                tabIndex={-1}
+                              />
+                            </div>
+                          </div>
+
+                          <div
+                            className={`admin-option-card ${serviceForm.isVariablePrice ? 'selected' : ''}`}
+                            onClick={() => setServiceForm(f => ({
+                              ...f,
+                              isVariablePrice: !f.isVariablePrice,
+                              price: !f.isVariablePrice ? '' : f.price,
+                            }))}
+                            role="button"
+                            tabIndex={0}
+                          >
+                            <div className="admin-option-card-icon">
+                              <i className="fa-solid fa-sliders"></i>
+                            </div>
+                            <div className="admin-option-card-content">
+                              <div className="admin-option-card-title">Variable Price</div>
+                              <div className="admin-option-card-desc">Price varies based on patient evaluation or trial</div>
+                            </div>
+                            <div className="admin-option-card-checkbox">
+                              <input
+                                type="checkbox"
+                                checked={serviceForm.isVariablePrice}
+                                onChange={() => {}}
+                                tabIndex={-1}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="admin-service-modal-footer">
+                        <button
+                          type="button"
+                          className="admin-modal-btn-cancel"
+                          onClick={() => setServiceModalOpen(false)}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-modal-btn-save"
+                          onClick={handleSaveService}
+                          disabled={!serviceForm.name.trim() || !serviceForm.category.trim()}
+                        >
+                          <i className={`fa-solid ${serviceModalMode === 'edit' ? 'fa-check' : 'fa-plus'}`}></i>
+                          {serviceModalMode === 'edit' ? 'Update Service' : 'Save Service'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Delete Confirmation Modal */}
+                {deleteServiceConfirm && (
+                  <div className="invoice-modal-overlay" onClick={() => setDeleteServiceConfirm(null)}>
+                    <div className="admin-service-modal delete-modal" onClick={e => e.stopPropagation()}>
+                      <div className="admin-service-modal-header delete-header">
+                        <div className="admin-service-modal-header-left">
+                          <div className="admin-service-modal-badge delete-badge">
+                            <i className="fa-solid fa-triangle-exclamation"></i>
+                          </div>
+                          <div className="admin-service-modal-title-wrap">
+                            <h3>Confirm Removal</h3>
+                            <p>Remove service from catalog</p>
+                          </div>
+                        </div>
+                        <button onClick={() => setDeleteServiceConfirm(null)} className="admin-service-modal-close" aria-label="Close modal">
+                          <i className="fa-solid fa-xmark"></i>
+                        </button>
+                      </div>
+
+                      <div className="admin-service-modal-body delete-body">
+                        <div className="admin-delete-icon-ring">
+                          <i className="fa-solid fa-trash-can"></i>
+                        </div>
+                        <h4>Delete "{deleteServiceConfirm.name}"?</h4>
+                        <p className="admin-delete-subtext">
+                          This service will be removed from future receptionist bookings and billing. Existing past records will remain intact.
+                        </p>
+                      </div>
+
+                      <div className="admin-service-modal-footer delete-footer">
+                        <button
+                          type="button"
+                          className="admin-modal-btn-cancel"
+                          onClick={() => setDeleteServiceConfirm(null)}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-modal-btn-danger"
+                          onClick={() => handleDeleteService(deleteServiceConfirm.id)}
+                        >
+                          <i className="fa-solid fa-trash-can"></i> Confirm Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              );
+            })()}
+
           </main>
         </div>
         );
       })()}
+
+      {/* Empty Amount Alert Pop-up Modal */}
+      {emptyPriceAlert && (
+        <div className="invoice-modal-overlay" style={{ zIndex: 99999 }} onClick={() => setEmptyPriceAlert(null)}>
+          <div className="price-alert-modal-card" onClick={e => e.stopPropagation()}>
+            <div className="price-alert-modal-header">
+              <div className="price-alert-header-left">
+                <div className="price-alert-icon-wrap">
+                  <i className="fa-solid fa-receipt"></i>
+                </div>
+                <div className="price-alert-title-wrap">
+                  <h3>Price Required</h3>
+                  <p>Enter service amount to generate invoice</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEmptyPriceAlert(null)}
+                className="price-alert-close-btn"
+                aria-label="Close"
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            <div className="price-alert-modal-body">
+              <div className="price-alert-service-badge">
+                <div className="price-alert-service-info">
+                  <span className="price-alert-service-cat">{emptyPriceAlert.category || 'Clinical Service'}</span>
+                  <h4 className="price-alert-service-name">{emptyPriceAlert.name || emptyPriceAlert.serviceName}</h4>
+                </div>
+                <span className="price-alert-status-pill">
+                  <i className="fa-solid fa-circle-exclamation"></i> Amount Missing
+                </span>
+              </div>
+
+              <div className="price-alert-input-section">
+                <label className="price-alert-input-label">
+                  <span>Enter Fee Amount</span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-tertiary)' }}>₹ INR</span>
+                </label>
+                <div className="price-alert-input-group">
+                  <span className="price-alert-currency-addon">₹</span>
+                  <input
+                    type="number"
+                    min="1"
+                    autoFocus
+                    placeholder="Enter fee (e.g. 500)"
+                    value={quickModalPrice}
+                    onChange={(e) => setQuickModalPrice(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const parsed = parseInt(quickModalPrice, 10);
+                        if (parsed && parsed > 0) {
+                          handleServicePriceChange(emptyPriceAlert.id, parsed);
+                          setEmptyPriceAlert(null);
+                          setQuickModalPrice('');
+                        }
+                      }
+                    }}
+                    className="price-alert-field"
+                  />
+                </div>
+
+                <div className="price-alert-presets">
+                  <span className="price-preset-label">Quick select:</span>
+                  {[300, 500, 800, 1000, 1500].map((presetVal) => (
+                    <button
+                      key={presetVal}
+                      type="button"
+                      className={`price-preset-btn ${quickModalPrice === String(presetVal) ? 'active' : ''}`}
+                      onClick={() => setQuickModalPrice(String(presetVal))}
+                    >
+                      ₹{presetVal}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="price-alert-modal-footer">
+              <button
+                type="button"
+                className="price-alert-cancel-btn"
+                onClick={() => {
+                  setEmptyPriceAlert(null);
+                  setTimeout(() => {
+                    const inputEl = document.querySelector('.custom-price-input');
+                    if (inputEl) {
+                      inputEl.focus();
+                      inputEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                  }, 150);
+                }}
+              >
+                Edit on Form
+              </button>
+              <button
+                type="button"
+                className="price-alert-confirm-btn"
+                disabled={!quickModalPrice || parseInt(quickModalPrice, 10) <= 0}
+                onClick={() => {
+                  const parsed = parseInt(quickModalPrice, 10);
+                  if (parsed && parsed > 0) {
+                    handleServicePriceChange(emptyPriceAlert.id, parsed);
+                    setEmptyPriceAlert(null);
+                    setQuickModalPrice('');
+                  }
+                }}
+              >
+                <i className="fa-solid fa-check"></i> Set Price & Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Invoice Modal Overlay */}
       {activeInvoice && (
@@ -3731,7 +4533,7 @@ function App() {
                       <h2 className="invoice-clinic-title">{t.nav.clinicName}</h2>
                       <p className="invoice-clinic-subtitle">{t.nav.logoSub}</p>
                       <p className="invoice-clinic-address-text">
-                        Surakshya Polyclinic, 2nd Floor, Ganga Ghosh Building, Beside Style Bazar, Raghunathganj, Murshidabad - 742225
+                        Baak O Shrobon Kendra, Surakshya Polyclinic, 2nd Floor, Ganga Ghosh Building, Beside Style Bazar, Raghunathganj, Murshidabad - 742225
                       </p>
                       <p className="invoice-clinic-contact-text">
                         Ph: +91 9674163040 | Email: avijitchoudhuryent79@gmail.com
@@ -3740,7 +4542,7 @@ function App() {
                   </div>
                   <div className="invoice-license-block">
                     <span className="invoice-tag-tax">INVOICE</span>
-                    <p className="invoice-license-item"><strong>Reg No:</strong> WB/JGP/CE/2026-9281</p>
+                    <p className="invoice-license-item"><strong>Reg No:</strong> I2026-1931</p>
                   </div>
                 </div>
 
@@ -3792,7 +4594,7 @@ function App() {
                         </tr>
                         <tr>
                           <th>Consulting Doctor:</th>
-                          <td>Dr. Avijit Chowdhury, MS (ENT)</td>
+                          <td>Dr. Avijit Choudhury, MS (ENT)</td>
                         </tr>
                         <tr>
                           <th>Referred By:</th>

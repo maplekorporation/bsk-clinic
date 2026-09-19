@@ -82,7 +82,7 @@ const ServiceMultiSelect = ({
   };
 
   const totalAmount = selectedServices.reduce(
-    (acc, s) => acc + (s.price ?? 0),
+    (acc, s) => acc + (Number(s.customPrice !== undefined && typeof s.customPrice === 'number' ? s.customPrice : s.price) || 0),
     0
   );
 
@@ -329,25 +329,65 @@ const ServiceMultiSelect = ({
           </div>
         ) : (
           <div className="selected-services-list">
-            <div className="selected-services-grid">
-              {selectedServices.map(srv => {
+            <div className="selected-services-order-list">
+              {selectedServices.map((srv, idx) => {
+                const isVariable = srv.isVariablePrice || srv.category === 'Hearing Aid Services' || srv.category === 'Consultation' || (srv.name && (srv.name.toLowerCase().includes('hearing aid') || srv.name.toLowerCase().includes('consultan')));
+                const isPriceEmpty = isVariable && (!srv.customPrice || Number(srv.customPrice) <= 0);
+
                 return (
-                  <div key={srv.id} className="selected-service-item-card">
-                    <div className="selected-item-info">
-                      <span className="selected-item-category">{srv.category || 'General'}</span>
-                      <h5 className="selected-item-name">{srv.name}</h5>
+                  <div key={srv.id} className={`selected-service-row ${isVariable ? 'is-variable-row' : ''} ${isPriceEmpty ? 'row-has-error' : ''}`}>
+                    {/* Index & Service Info */}
+                    <div className="service-row-left">
+                      <span className="service-row-index">{idx + 1}</span>
+                      <div className="service-row-info">
+                        <div className="service-row-title-line">
+                          <h5 className="service-row-name">{srv.name}</h5>
+                          <span className="service-row-category">{srv.category || 'General'}</span>
+                          {isVariable && (
+                            <span className="service-row-variable-badge">
+                              <i className="fa-solid fa-sliders"></i> Custom Price
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="selected-item-pricing-action">
-                      <div className="selected-price-display">
-                        <span className="selected-price-tag">
-                          ₹{Number(srv.price).toLocaleString('en-IN')}
-                        </span>
-                      </div>
+                    {/* Pricing & Actions */}
+                    <div className="service-row-right">
+                      {isVariable ? (
+                        <div className="service-row-price-input-group">
+                          <div className={`service-row-input-wrap ${isPriceEmpty ? 'has-error' : ''}`}>
+                            <span className="service-row-currency">₹</span>
+                            <input
+                              type="number"
+                              className="service-row-price-input custom-price-input"
+                              value={srv.customPrice !== undefined && srv.customPrice !== '' ? srv.customPrice : ''}
+                              min="1"
+                              placeholder="Enter Price"
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) => {
+                                const raw = e.target.value;
+                                const val = raw === '' ? '' : Math.max(0, parseInt(raw, 10) || 0);
+                                if (onPriceChange) onPriceChange(srv.id, val);
+                              }}
+                              aria-label={`Enter price for ${srv.name}`}
+                            />
+                          </div>
+                          {isPriceEmpty && (
+                            <span className="service-row-price-required-hint">
+                              <i className="fa-solid fa-circle-exclamation"></i> Required
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="service-row-price-tag">
+                          ₹{Number(srv.price).toLocaleString('en-IN')}{srv.perSession ? '/session' : ''}
+                        </div>
+                      )}
 
                       <button
                         type="button"
-                        className="selected-service-remove-btn"
+                        className="service-row-remove-btn"
                         onClick={() => onToggleService(srv)}
                         title={`Remove ${srv.name}`}
                         aria-label={`Remove ${srv.name}`}

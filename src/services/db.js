@@ -97,52 +97,268 @@ export const db = {
   getDisplayName: () => getDisplayName(),
 
   // ──── Services (Catalog) ───────────────────────────
+  // Primary source: backend API (database).
+  // Fallback: localStorage cache → initial config file.
 
-  getServices: async () => {
-    return [
-      { id: 'srv_1', name: 'ENT Consultation', price: 500, category: 'ENT Consultation' },
-      { id: 'srv_2', name: 'Pure Tone Audiometry', price: 800, category: 'Hearing Tests & Diagnostics' },
-      { id: 'srv_3', name: 'Tympanometry', price: 500, category: 'Hearing Tests & Diagnostics' },
-      { id: 'srv_4', name: 'TdT', price: 400, category: 'Hearing Tests & Diagnostics' },
-      { id: 'srv_5', name: 'SISI', price: 400, category: 'Hearing Tests & Diagnostics' },
-      { id: 'srv_6', name: 'Eustachian Tube Function Test', price: 600, category: 'Hearing Tests & Diagnostics' },
-      { id: 'srv_7', name: 'BERA', price: 2500, category: 'Hearing Tests & Diagnostics' },
-      { id: 'srv_8', name: 'OAE', price: 1000, category: 'Hearing Tests & Diagnostics' },
-      { id: 'srv_9', name: 'FOL', price: 1500, category: 'ENT Endoscopy' },
-      { id: 'srv_10', name: 'DNE', price: 1500, category: 'ENT Endoscopy' },
-      { id: 'srv_11', name: 'Otoendoscopy', price: 800, category: 'ENT Endoscopy' },
-      { id: 'srv_12', name: 'Digital Hearing Aid Trial', price: 500, category: 'Hearing Aid Services' },
-      { id: 'srv_13', name: 'Hearing Aid Fitting', price: 500, category: 'Hearing Aid Services' },
-      { id: 'srv_14', name: 'Speech Therapy', price: 1000, category: 'Speech & Language Therapy' },
-      { id: 'srv_15', name: 'Vestibular Rehab Therapy', price: 1200, category: 'Vestibular Rehabilitation' },
-      { id: 'srv_16', name: 'Occupational Therapy', price: 1200, category: 'Occupational Therapy' },
-      { id: 'srv_17', name: 'Psychological Assessment', price: 1500, category: 'Psychological Services' },
-    ];
+  /**
+   * Internal helper: loads catalog from backend, with localStorage + config fallback.
+   * @param {boolean} allServices - if true, fetch all (including inactive) via /all endpoint
+   */
+  _loadCatalog: async (allServices = false) => {
+    const STORAGE_KEY = 'bsk_service_catalog';
+    const endpoint = allServices ? `${API_BASE}/services/all` : `${API_BASE}/services`;
+
+    // 1. Try the backend first (single source of truth)
+    try {
+      const res = await fetch(endpoint, { headers: authHeaders() });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          // Map backend shape → frontend shape & cache locally
+          const mapped = data.map(s => ({
+            id: `srv_${s.id}`,
+            _backendId: s.id,
+            name: s.name,
+            price: s.price || 0,
+            category: s.category || 'Uncategorized',
+            isActive: s.isActive !== false,
+            isVariablePrice: s.price === 0 || s.price === null || (s.name && (s.name.toLowerCase().includes('hearing aid') || s.name.toLowerCase().includes('consultan'))),
+          }));
+
+          // If backend catalog does not have Consultancy yet, attempt to auto-create it on backend
+          const hasConsultancy = mapped.some(s => s.name && s.name.toLowerCase() === 'consultancy');
+          if (!hasConsultancy && authHeaders().Authorization) {
+            fetch(`${API_BASE}/services`, {
+              method: 'POST',
+              headers: authHeaders(),
+              body: JSON.stringify({
+                name: 'Consultancy',
+                price: 0,
+                category: 'Consultation',
+                isActive: true,
+              }),
+            }).catch(() => {});
+          }
+
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(mapped)); } catch (_) {}
+          return mapped;
+        }
+      }
+    } catch (e) {
+      console.warn('Backend services fetch failed, using cache:', e.message);
+    }
+
+    // 2. Fallback: localStorage cache
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Ensure Consultancy from default catalog is merged if missing from cache
+          const { default: SERVICE_CATALOG } = await import('../config/serviceCatalog');
+          const missing = SERVICE_CATALOG.filter(def => !parsed.some(p => p.name && p.name.toLowerCase() === def.name.toLowerCase()));
+          if (missing.length > 0) {
+            const merged = [...parsed, ...missing];
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(merged)); } catch (_) {}
+            return merged;
+          }
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to parse service catalog from localStorage', e);
+    }
+
+    // 3. Last resort: initial config file
+    const { default: SERVICE_CATALOG } = await import('../config/serviceCatalog');
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(SERVICE_CATALOG)); } catch (_) {}
+    return SERVICE_CATALOG;
   },
 
   /**
-   * Fetch all services (including inactive, for admin).
+   * Fetch active services (for receptionist booking view).
+   */
+  getServices: async () => {
+    const catalog = await db._loadCatalog(false);
+    return catalog.filter(s => s.isActive !== false);
+  },
+
+  /**
+   * Fetch all services including inactive (for admin management).
    */
   getAllServices: async () => {
-    return [
-      { id: 'srv_1', name: 'ENT Consultation', price: 500, category: 'ENT Consultation', isActive: true },
-      { id: 'srv_2', name: 'Pure Tone Audiometry', price: 800, category: 'Hearing Tests & Diagnostics', isActive: true },
-      { id: 'srv_3', name: 'Tympanometry', price: 500, category: 'Hearing Tests & Diagnostics', isActive: true },
-      { id: 'srv_4', name: 'TdT', price: 400, category: 'Hearing Tests & Diagnostics', isActive: true },
-      { id: 'srv_5', name: 'SISI', price: 400, category: 'Hearing Tests & Diagnostics', isActive: true },
-      { id: 'srv_6', name: 'Eustachian Tube Function Test', price: 600, category: 'Hearing Tests & Diagnostics', isActive: true },
-      { id: 'srv_7', name: 'BERA', price: 2500, category: 'Hearing Tests & Diagnostics', isActive: true },
-      { id: 'srv_8', name: 'OAE', price: 1000, category: 'Hearing Tests & Diagnostics', isActive: true },
-      { id: 'srv_9', name: 'FOL', price: 1500, category: 'ENT Endoscopy', isActive: true },
-      { id: 'srv_10', name: 'DNE', price: 1500, category: 'ENT Endoscopy', isActive: true },
-      { id: 'srv_11', name: 'Otoendoscopy', price: 800, category: 'ENT Endoscopy', isActive: true },
-      { id: 'srv_12', name: 'Digital Hearing Aid Trial', price: 500, category: 'Hearing Aid Services', isActive: true },
-      { id: 'srv_13', name: 'Hearing Aid Fitting', price: 500, category: 'Hearing Aid Services', isActive: true },
-      { id: 'srv_14', name: 'Speech Therapy', price: 1000, category: 'Speech & Language Therapy', isActive: true },
-      { id: 'srv_15', name: 'Vestibular Rehab Therapy', price: 1200, category: 'Vestibular Rehabilitation', isActive: true },
-      { id: 'srv_16', name: 'Occupational Therapy', price: 1200, category: 'Occupational Therapy', isActive: true },
-      { id: 'srv_17', name: 'Psychological Assessment', price: 1500, category: 'Psychological Services', isActive: true },
-    ];
+    const catalog = await db._loadCatalog(true);
+    return catalog.map(s => ({ ...s, isActive: s.isActive !== false }));
+  },
+
+  /**
+   * Save (add or update) a service — persists to backend DB.
+   */
+  saveService: async (service) => {
+    // Check if the service already exists in the backend or catalog
+    const catalog = await db.getAllServices();
+    const existing = catalog.find(s => (service._backendId && s._backendId === service._backendId) || s.id === service.id);
+
+    if (existing && existing._backendId) {
+      // Update existing service
+      try {
+        const res = await fetch(`${API_BASE}/services/${existing._backendId}`, {
+          method: 'PUT',
+          headers: authHeaders(),
+          body: JSON.stringify({
+            name: service.name,
+            price: Number(service.price) || 0,
+            category: service.category,
+            isActive: service.isActive !== false,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.message || `Failed to update service (${res.status})`);
+        }
+      } catch (e) {
+        console.error('Backend updateService failed:', e);
+        throw e;
+      }
+    } else {
+      // Create a brand new service via POST /api/clinic/services
+      try {
+        const res = await fetch(`${API_BASE}/services`, {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({
+            name: service.name,
+            price: Number(service.price) || 0,
+            category: service.category,
+            isActive: service.isActive !== false,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.message || `Failed to create service (${res.status})`);
+        }
+      } catch (e) {
+        console.error('Backend createService failed:', e);
+        throw e;
+      }
+    }
+
+    // Refresh catalog from backend after mutation
+    return db.getAllServices();
+  },
+
+  /**
+   * Update only the price of a service — persists to backend DB.
+   */
+  updateServicePrice: async (id, newPrice) => {
+    const priceNum = Math.max(0, parseInt(newPrice, 10) || 0);
+
+    // Extract numeric backend ID
+    const numMatch = String(id).match(/\d+/);
+    const numericId = numMatch ? parseInt(numMatch[0], 10) : null;
+
+    if (numericId) {
+      try {
+        const res = await fetch(`${API_BASE}/services/${numericId}/price`, {
+          method: 'PUT',
+          headers: authHeaders(),
+          body: JSON.stringify({ price: priceNum }),
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || `Failed to update price (${res.status})`);
+        }
+      } catch (e) {
+        console.error('Backend price update failed:', e);
+        throw e; // Let caller know the update didn't persist
+      }
+    }
+
+    // Also update localStorage cache for immediate UI consistency
+    const STORAGE_KEY = 'bsk_service_catalog';
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const catalog = JSON.parse(stored);
+        const updated = catalog.map(s => s.id === id ? { ...s, price: priceNum, isVariablePrice: false } : s);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      }
+    } catch (_) {}
+
+    // Refresh from backend to ensure consistency
+    return db.getAllServices();
+  },
+
+  /**
+   * Toggle active/inactive status of a service — persists to backend DB.
+   */
+  toggleServiceActive: async (id) => {
+    const numMatch = String(id).match(/\d+/);
+    const numericId = numMatch ? parseInt(numMatch[0], 10) : null;
+
+    if (numericId) {
+      try {
+        const res = await fetch(`${API_BASE}/services/${numericId}/toggle`, {
+          method: 'PUT',
+          headers: authHeaders(),
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || `Failed to toggle service (${res.status})`);
+        }
+      } catch (e) {
+        console.error('Backend toggle failed:', e);
+        throw e;
+      }
+    }
+
+    // Update localStorage cache
+    const STORAGE_KEY = 'bsk_service_catalog';
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const catalog = JSON.parse(stored);
+        const updated = catalog.map(s => s.id === id ? { ...s, isActive: !s.isActive } : s);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      }
+    } catch (_) {}
+
+    return db.getAllServices();
+  },
+
+  /**
+   * Delete a service from the catalog — persists to backend DB.
+   */
+  deleteService: async (id) => {
+    const numMatch = String(id).match(/\d+/);
+    const numericId = numMatch ? parseInt(numMatch[0], 10) : null;
+
+    if (numericId) {
+      try {
+        const res = await fetch(`${API_BASE}/services/${numericId}`, {
+          method: 'DELETE',
+          headers: authHeaders(),
+        });
+        if (!res.ok && res.status !== 404) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || `Failed to delete service (${res.status})`);
+        }
+      } catch (e) {
+        console.error('Backend deleteService failed:', e);
+        throw e;
+      }
+    }
+
+    const STORAGE_KEY = 'bsk_service_catalog';
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const catalog = JSON.parse(stored);
+        const updated = catalog.filter(s => s.id !== id);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      }
+    } catch (_) {}
+    return db.getAllServices();
   },
 
   // ──── Patients ─────────────────────────────────────
