@@ -3,6 +3,7 @@ import { db } from './services/db';
 import en from './locales/en';
 import bn from './locales/bn';
 import ServiceMultiSelect from './components/ServiceMultiSelect';
+import { CLINIC_CONFIG } from './config';
 
 // Simple hash-based router
 function useHashRoute() {
@@ -784,7 +785,7 @@ function App() {
               {t.hero.subtitle}
             </p>
             <div className="hero-actions">
-              <a href="tel:+919999999999" className="btn btn-secondary">{t.hero.callNow} <i className="fa-solid fa-phone" aria-hidden="true"></i></a>
+              <a href={`tel:${CLINIC_CONFIG.phoneRaw}`} className="btn btn-secondary">{t.hero.callNow} <i className="fa-solid fa-phone" aria-hidden="true"></i></a>
             </div>
           </div>
           
@@ -1206,7 +1207,7 @@ function App() {
                 <div className="info-box-icon"><i className="fa-solid fa-headset" aria-hidden="true"></i></div>
                 <div className="info-box-details">
                   <h4>{t.contact.quickContactTitle}</h4>
-                  <p><strong>{t.contact.phoneLabel}</strong> <a href="tel:+919999999999">+91 9999999999</a></p>
+                  <p><strong>{t.contact.phoneLabel}</strong> <a href={`tel:${CLINIC_CONFIG.phoneRaw}`}>{CLINIC_CONFIG.phoneDisplay}</a></p>
                 </div>
               </div>
             </div>
@@ -4621,7 +4622,7 @@ function App() {
                         Baak O Shrobon Kendra, Surakshya Polyclinic, 2nd Floor, Ganga Ghosh Building, Beside Style Bazar, Raghunathganj, Murshidabad - 742225
                       </p>
                       <p className="invoice-clinic-contact-text">
-                        Ph: +91 9999999999 | Email: avijitchoudhuryent79@gmail.com
+                        Ph: {CLINIC_CONFIG.phoneDisplay}
                       </p>
                     </div>
                   </div>
@@ -4807,10 +4808,10 @@ function App() {
           >
             <i className="fa-solid fa-arrow-up"></i>
           </button>
-          <a href="tel:+919999999999" className="floating-btn floating-btn-call" aria-label="Call Baak o Shrobon Kendra Support">
+          <a href={`tel:${CLINIC_CONFIG.phoneRaw}`} className="floating-btn floating-btn-call" aria-label="Call Baak o Shrobon Kendra Support">
             <i className="fa-solid fa-phone"></i>
           </a>
-          <a href="https://wa.me/919999999999" className="floating-btn floating-btn-whatsapp" target="_blank" rel="noopener noreferrer" aria-label="Chat with us on WhatsApp">
+          <a href={`https://wa.me/${CLINIC_CONFIG.whatsappNumber}`} className="floating-btn floating-btn-whatsapp" target="_blank" rel="noopener noreferrer" aria-label="Chat with us on WhatsApp">
             <i className="fa-brands fa-whatsapp"></i>
           </a>
         </div>

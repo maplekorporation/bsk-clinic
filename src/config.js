@@ -4,16 +4,16 @@
  */
 export const CLINIC_CONFIG = {
   // The phone number formatting shown in UI text
-  phoneDisplay: process.env.REACT_APP_CLINIC_PHONE_DISPLAY || "+91 9999999999",
+  phoneDisplay: process.env.REACT_APP_CLINIC_PHONE_DISPLAY || "+91 8250351187",
   
   // The raw phone number used in tel: links
-  phoneRaw: process.env.REACT_APP_CLINIC_PHONE_RAW || "+919999999999",
+  phoneRaw: process.env.REACT_APP_CLINIC_PHONE_RAW || "+918250351187",
   
   // The email address for contact and inquiries
-  email: process.env.REACT_APP_CLINIC_EMAIL || "avijitchoudhuryent79@gmail.com",
+  email: process.env.REACT_APP_CLINIC_EMAIL || "",
   
   // The WhatsApp number (including country code, without '+' sign) for wa.me links
-  whatsappNumber: process.env.REACT_APP_CLINIC_WHATSAPP || "919999999999",
+  whatsappNumber: process.env.REACT_APP_CLINIC_WHATSAPP || "918250351187",
 
   // Clinic address details
   addressLine1: "Baak O Shrobon Kendra, Surakshya Polyclinic, 2nd Floor, Ganga Ghosh Building,",
