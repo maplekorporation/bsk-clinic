@@ -1343,7 +1343,7 @@ function App() {
               <a href="#why-choose-us">{t.footer.linkWhyUs}</a>
               <a href="#faq">{t.footer.linkFaq}</a>
               <a href="#contact">{t.footer.linkContact}</a>
-              <a href="#/login">Staff Portal</a>
+              <a href="#/login">Clinic Portal</a>
             </div>
           </div>
         
@@ -1396,8 +1396,8 @@ function App() {
               <div className="login-logo-wrapper">
                 <img src="logo.png" alt="Baak o Shrobon Kendra" className="login-logo-img" />
               </div>
-              <h2>BSK Staff Portal</h2>
-              <p>Sign in with your assigned credentials</p>
+              <h2>Clinic Portal</h2>
+              <p>Sign in to your account</p>
             </div>
             
             <form className="login-form" onSubmit={(e) => {
