@@ -4619,7 +4619,7 @@ function App() {
                       <h2 className="invoice-clinic-title">{t.nav.clinicName}</h2>
                       <p className="invoice-clinic-subtitle">{t.nav.logoSub}</p>
                       <p className="invoice-clinic-address-text">
-                        Baak O Shrobon Kendra, Surakshya Polyclinic, 2nd Floor, Ganga Ghosh Building, Beside Style Bazar, Raghunathganj, Murshidabad - 742225
+                        Surakshya Polyclinic, 2nd Floor, Ganga Ghosh Building, Beside Style Bazar, Raghunathganj, Murshidabad - 742225
                       </p>
                       <p className="invoice-clinic-contact-text">
                         Ph: {CLINIC_CONFIG.phoneDisplay}

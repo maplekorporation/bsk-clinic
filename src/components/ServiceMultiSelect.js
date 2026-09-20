@@ -356,7 +356,13 @@ const ServiceMultiSelect = ({
                     <div className="service-row-right">
                       {isVariable ? (
                         <div className="service-row-price-input-group">
-                          <div className={`service-row-input-wrap ${isPriceEmpty ? 'has-error' : ''}`}>
+                          <div 
+                            className={`service-row-input-wrap ${isPriceEmpty ? 'has-error' : ''}`}
+                            onClick={(e) => {
+                              const input = e.currentTarget.querySelector('input');
+                              if (input) input.focus();
+                            }}
+                          >
                             <span className="service-row-currency">₹</span>
                             <input
                               type="number"

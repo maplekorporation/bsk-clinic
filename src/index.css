@@ -5996,6 +5996,7 @@ body.dark-mode .portal-header-logout-btn:hover {
     font-weight: 700;
     color: var(--secondary);
     padding: 2px 0;
+    text-align: right;
     -moz-appearance: textfield;
 }
 
@@ -6003,6 +6004,7 @@ body.dark-mode .portal-header-logout-btn:hover {
     color: rgba(var(--secondary-rgb), 0.4);
     font-weight: 400;
     font-size: 0.8rem;
+    text-align: right;
 }
 
 .service-row-price-input::-webkit-outer-spin-button,
@@ -6256,6 +6258,7 @@ body.dark-mode .portal-header-logout-btn:hover {
     font-weight: 700;
     color: var(--secondary);
     padding: 2px 0;
+    text-align: right;
     -moz-appearance: textfield;
 }
 
@@ -6263,6 +6266,7 @@ body.dark-mode .portal-header-logout-btn:hover {
     color: rgba(var(--secondary-rgb), 0.35);
     font-weight: 400;
     font-size: 0.85rem;
+    text-align: right;
 }
 
 .custom-price-input::-webkit-outer-spin-button,
