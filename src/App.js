@@ -89,10 +89,11 @@ function App() {
   const [view, setView] = useState('landing'); // 'landing' | 'receptionist'
 
   // ==========================================
-  // 0. Authentication State
+  // 0. Authentication State (Unified RBAC)
   // ==========================================
+  const [currentUserRole, setCurrentUserRole] = useState(() => db.getRole());
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return db.isLoggedIn() && db.getRole() === 'RECEPTIONIST';
+    return db.isLoggedIn() && (db.getRole() === 'RECEPTIONIST' || db.getRole() === 'ADMIN');
   });
   const [authError, setAuthError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -128,28 +129,47 @@ function App() {
   // Redirect to login if not authenticated, or to dashboard if already authenticated
   useEffect(() => {
     if (hash === '#/receptionist' && !isAuthenticated) {
-      navigate('/registration');
+      navigate('/login');
     } else if (hash === '#/admin' && !isAdminAuthenticated) {
-      navigate('/admin-login');
-    } else if (hash === '#/registration' && isAuthenticated) {
-      navigate('/receptionist');
-    } else if (hash === '#/admin-login' && isAdminAuthenticated) {
-      navigate('/admin');
+      navigate('/login');
+    } else if (hash === '#/login' || hash === '#/registration' || hash === '#/admin-login') {
+      if (isAdminAuthenticated) {
+        navigate('/admin');
+      } else if (isAuthenticated) {
+        navigate('/receptionist');
+      } else if (hash !== '#/login') {
+        navigate('/login');
+      }
     }
   }, [hash, isAuthenticated, isAdminAuthenticated, navigate]);
 
   const handleLogin = async (username, password) => {
     try {
+      setAuthError('');
       const data = await db.login(username, password);
-      if (data.role === 'RECEPTIONIST' || data.role === 'ADMIN') {
-        // If an ADMIN logs in through the receptionist portal, let's allow it or restrict?
-        // Let's allow access to the receptionist tab since ADMIN has role ADMIN and security config allows both
+      const role = data.role;
+      setCurrentUserRole(role);
+      if (role === 'ADMIN') {
+        setIsAdminAuthenticated(true);
         setIsAuthenticated(true);
+        setAuthError('');
+        navigate('/admin');
+      } else if (role === 'RECEPTIONIST') {
+        setIsAuthenticated(true);
+        setIsAdminAuthenticated(false);
+        setAuthError('');
+        navigate('/receptionist');
+      } else if (role === 'DOCTOR') {
+        setIsAuthenticated(true);
+        setIsAdminAuthenticated(false);
         setAuthError('');
         navigate('/receptionist');
       } else {
         db.logout();
-        setAuthError('Access denied. Invalid role.');
+        setIsAuthenticated(false);
+        setIsAdminAuthenticated(false);
+        setCurrentUserRole(null);
+        setAuthError('Access denied. Invalid or unrecognized role.');
       }
     } catch (err) {
       setAuthError(err.message || 'Invalid username or password. Please try again.');
@@ -158,33 +178,15 @@ function App() {
 
   const handleLogout = () => {
     db.logout();
+    setCurrentUserRole(null);
     setIsAuthenticated(false);
-    setAuthError('');
-    navigate('');
-  };
-
-  const handleAdminLogin = async (username, password) => {
-    try {
-      const data = await db.login(username, password);
-      if (data.role === 'ADMIN') {
-        setIsAdminAuthenticated(true);
-        setAdminAuthError('');
-        navigate('/admin');
-      } else {
-        db.logout();
-        setAdminAuthError('Access denied. Admin role required.');
-      }
-    } catch (err) {
-      setAdminAuthError(err.message || 'Invalid admin credentials. Access denied.');
-    }
-  };
-
-  const handleAdminLogout = () => {
-    db.logout();
     setIsAdminAuthenticated(false);
-    setAdminAuthError('');
-    navigate('');
+    setAuthError('');
+    navigate('/login');
   };
+
+  const handleAdminLogin = handleLogin;
+  const handleAdminLogout = handleLogout;
 
   // ==========================================
   // 1. Page Loader State
@@ -473,10 +475,8 @@ function App() {
       setView('receptionist');
     } else if (hash === '#/admin') {
       setView('admin');
-    } else if (hash === '#/registration') {
-      setView('registration');
-    } else if (hash === '#/admin-login') {
-      setView('admin-login');
+    } else if (hash === '#/login' || hash === '#/registration' || hash === '#/admin-login') {
+      setView('login');
     } else {
       setView('landing');
     }
@@ -1343,6 +1343,7 @@ function App() {
               <a href="#why-choose-us">{t.footer.linkWhyUs}</a>
               <a href="#faq">{t.footer.linkFaq}</a>
               <a href="#contact">{t.footer.linkContact}</a>
+              <a href="#/login">Staff Portal</a>
             </div>
           </div>
         
@@ -1382,8 +1383,8 @@ function App() {
         </>
       )}
 
-      {/* Login / Registration Page */}
-      {view === 'registration' && !isAuthenticated && (
+      {/* Unified Portal Login Page (RBAC) */}
+      {(view === 'login' || view === 'registration' || view === 'admin-login') && !isAuthenticated && !isAdminAuthenticated && (
         <div className="login-page-container">
           <div className="blob-container" aria-hidden="true">
             <div className="blob blob-1"></div>
@@ -1395,8 +1396,8 @@ function App() {
               <div className="login-logo-wrapper">
                 <img src="logo.png" alt="Baak o Shrobon Kendra" className="login-logo-img" />
               </div>
-              <h2>Receptionist Portal</h2>
-              <p>Sign in to access the booking system</p>
+              <h2>BSK Staff Portal</h2>
+              <p>Sign in with your assigned credentials</p>
             </div>
             
             <form className="login-form" onSubmit={(e) => {
@@ -1435,6 +1436,10 @@ function App() {
                   <span 
                     onClick={() => setShowPassword(!showPassword)}
                     style={{ cursor: 'pointer', position: 'absolute', right: '15px', left: 'auto', zIndex: 10, display: 'flex', alignItems: 'center', pointerEvents: 'auto', padding: '5px' }}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setShowPassword(!showPassword); }}
                   >
                     <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`} style={{ color: 'var(--text-secondary)', position: 'static', left: 'auto' }}></i>
                   </span>
@@ -1442,7 +1447,7 @@ function App() {
               </div>
               
               {authError && (
-                <div className="login-error">
+                <div className="login-error" role="alert">
                   <i className="fa-solid fa-triangle-exclamation"></i>
                   <span>{authError}</span>
                 </div>
@@ -1450,86 +1455,6 @@ function App() {
               
               <button type="submit" className="btn btn-primary login-submit-btn">
                 <i className="fa-solid fa-right-to-bracket"></i> Sign In
-              </button>
-              
-              <div className="login-footer-text">
-                <a href="#/" onClick={() => navigate('')}>
-                  <i className="fa-solid fa-arrow-left"></i> Back to Home
-                </a>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Admin Login Page */}
-      {view === 'admin-login' && !isAdminAuthenticated && (
-        <div className="login-page-container admin-login-page">
-          <div className="blob-container" aria-hidden="true">
-            <div className="blob blob-1"></div>
-            <div className="blob blob-2"></div>
-            <div className="blob blob-3"></div>
-          </div>
-          <div className="login-card admin-login-card">
-            <div className="login-header">
-              <div className="admin-login-icon-wrapper">
-                <i className="fa-solid fa-shield-halved"></i>
-              </div>
-              <h2>Admin Dashboard</h2>
-              <p>Authorized personnel only</p>
-            </div>
-            
-            <form className="login-form" onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.target);
-              handleAdminLogin(formData.get('username'), formData.get('password'));
-            }}>
-              <div className="form-group">
-                <label className="form-label" htmlFor="admin-login-username">Admin Username</label>
-                <div className="login-input-wrapper">
-                  <i className="fa-solid fa-user-shield"></i>
-                  <input 
-                    id="admin-login-username"
-                    type="text" 
-                    name="username"
-                    className="form-control login-input" 
-                    placeholder="Enter admin username"
-                    required
-                    autoFocus
-                  />
-                </div>
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label" htmlFor="admin-login-password">Password</label>
-                <div className="login-input-wrapper" style={{ position: 'relative' }}>
-                  <i className="fa-solid fa-key"></i>
-                  <input 
-                    id="admin-login-password"
-                    type={showAdminPassword ? "text" : "password"} 
-                    name="password"
-                    className="form-control login-input" 
-                    placeholder="Enter admin password"
-                    required
-                  />
-                  <span 
-                    onClick={() => setShowAdminPassword(!showAdminPassword)}
-                    style={{ cursor: 'pointer', position: 'absolute', right: '15px', left: 'auto', zIndex: 10, display: 'flex', alignItems: 'center', pointerEvents: 'auto', padding: '5px' }}
-                  >
-                    <i className={`fa-solid ${showAdminPassword ? 'fa-eye-slash' : 'fa-eye'}`} style={{ color: 'var(--text-secondary)', position: 'static', left: 'auto' }}></i>
-                  </span>
-                </div>
-              </div>
-              
-              {adminAuthError && (
-                <div className="login-error">
-                  <i className="fa-solid fa-triangle-exclamation"></i>
-                  <span>{adminAuthError}</span>
-                </div>
-              )}
-              
-              <button type="submit" className="btn btn-primary login-submit-btn admin-login-btn">
-                <i className="fa-solid fa-right-to-bracket"></i> Access Dashboard
               </button>
               
               <div className="login-footer-text">
