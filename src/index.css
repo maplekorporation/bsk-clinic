@@ -12887,3 +12887,108 @@ body.dark-mode .admin-tab-btn:focus-visible {
   background: rgba(230, 57, 70, 0.2) !important;
   box-shadow: 0 0 0 3.5px rgba(230, 57, 70, 0.25) !important;
 }
+
+/* ── Patient Section Keyboard & Focus-Visible Accessibility Styles ── */
+.patients-search-input:focus-visible {
+  outline: 2.5px solid var(--primary) !important;
+  outline-offset: 2px !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.22) !important;
+}
+
+body.dark-mode .patients-search-input:focus-visible {
+  outline: 2.5px solid #38bdf8 !important;
+  outline-offset: 2px !important;
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.25) !important;
+}
+
+.patients-search-clear:focus-visible {
+  outline: 2.5px solid var(--primary) !important;
+  outline-offset: 2px !important;
+  background: rgba(var(--primary-rgb), 0.2) !important;
+}
+
+body.dark-mode .patients-search-clear:focus-visible {
+  outline: 2.5px solid #38bdf8 !important;
+  outline-offset: 2px !important;
+  background: rgba(56, 189, 248, 0.25) !important;
+}
+
+.btn-patient-book:focus-visible {
+  outline: 2.5px solid var(--primary) !important;
+  outline-offset: 2px !important;
+  background: var(--primary) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 0 3.5px rgba(var(--primary-rgb), 0.3) !important;
+}
+
+body.dark-mode .btn-patient-book:focus-visible {
+  outline: 2.5px solid #38bdf8 !important;
+  outline-offset: 2px !important;
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 0 3.5px rgba(56, 189, 248, 0.35) !important;
+}
+
+.pagination-btn:focus-visible {
+  outline: 2.5px solid var(--primary) !important;
+  outline-offset: 2px !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3.5px rgba(var(--primary-rgb), 0.25) !important;
+}
+
+body.dark-mode .pagination-btn:focus-visible {
+  outline: 2.5px solid #38bdf8 !important;
+  outline-offset: 2px !important;
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 3.5px rgba(56, 189, 248, 0.3) !important;
+}
+
+.patients-empty-btn:focus-visible {
+  outline: 2.5px solid var(--primary) !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.3) !important;
+}
+
+body.dark-mode .patients-empty-btn:focus-visible {
+  outline: 2.5px solid #38bdf8 !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.35) !important;
+}
+
+.patient-card-phone-link:focus-visible {
+  outline: 2px solid var(--primary) !important;
+  outline-offset: 2px !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+body.dark-mode .patient-card-phone-link:focus-visible {
+  outline: 2px solid #38bdf8 !important;
+}
+
+.portal-table-wrapper:focus-visible {
+  outline: 2.5px solid var(--primary) !important;
+  outline-offset: -2px !important;
+}
+
+body.dark-mode .portal-table-wrapper:focus-visible {
+  outline: 2.5px solid #38bdf8 !important;
+}
+
+.patient-card:focus-visible {
+  outline: 2.5px solid var(--primary) !important;
+  outline-offset: 2px !important;
+}
+
+body.dark-mode .patient-card:focus-visible {
+  outline: 2.5px solid #38bdf8 !important;
+}
+
+.patients-table-row:focus-within {
+  background: rgba(var(--primary-rgb), 0.05);
+}
+
+body.dark-mode .patients-table-row:focus-within {
+  background: rgba(56, 189, 248, 0.08);
+}

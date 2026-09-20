@@ -429,6 +429,8 @@ function App() {
 
   // Accessibility and keyboard navigation refs for booking & registration flow
   const patientSearchInputRef = useRef(null);
+  const patientsDirectorySearchRef = useRef(null);
+  const patientsRowActionRefs = useRef([]);
   const registerNewPatientBtnRef = useRef(null);
   const registerFromSearchBtnRef = useRef(null);
   const newPatientNameRef = useRef(null);
@@ -513,6 +515,11 @@ function App() {
           if (patients) setPatientsList(patients);
         })
         .catch(err => console.error("Error refreshing patients", err));
+
+      // Auto-focus directory search input for immediate keyboard access
+      setTimeout(() => {
+        patientsDirectorySearchRef.current?.focus();
+      }, 80);
     }
   }, [portalTab]);
 
@@ -1549,6 +1556,8 @@ function App() {
               <button 
                 type="button"
                 role="tab"
+                id="portal-tab-new-booking"
+                aria-controls="portal-tabpanel-new-booking"
                 aria-selected={portalTab === 'new-booking'}
                 className={`portal-tab-btn ${portalTab === 'new-booking' ? 'active' : ''}`}
                 onClick={() => setPortalTab('new-booking')}
@@ -1559,6 +1568,8 @@ function App() {
               <button 
                 type="button"
                 role="tab"
+                id="portal-tab-patients"
+                aria-controls="portal-tabpanel-patients"
                 aria-selected={portalTab === 'patients'}
                 className={`portal-tab-btn ${portalTab === 'patients' ? 'active' : ''}`}
                 onClick={() => setPortalTab('patients')}
@@ -1569,6 +1580,8 @@ function App() {
               <button 
                 type="button"
                 role="tab"
+                id="portal-tab-bookings"
+                aria-controls="portal-tabpanel-bookings"
                 aria-selected={portalTab === 'bookings'}
                 className={`portal-tab-btn ${portalTab === 'bookings' ? 'active' : ''}`}
                 onClick={() => setPortalTab('bookings')}
@@ -1596,7 +1609,13 @@ function App() {
           {/* Main Content Area */}
           <main className="portal-main">
             {portalTab === 'new-booking' && (
-              <div className="portal-tab-content">
+              <div 
+                className="portal-tab-content"
+                role="tabpanel"
+                id="portal-tabpanel-new-booking"
+                aria-labelledby="portal-tab-new-booking"
+                tabIndex={-1}
+              >
                 <div className="portal-view-header">
                   <h2 className="portal-view-title">New Patient Booking</h2>
                   {(selectedPatient || selectedServices.length > 0 || isNewPatientForm || searchQuery.trim()) && (
@@ -2183,12 +2202,18 @@ function App() {
               const paginatedPatients = filteredPatients.slice(startIndexPatients, startIndexPatients + PATIENTS_PER_PAGE);
 
               return (
-              <div className="portal-tab-content animate-fade-in">
+              <div 
+                className="portal-tab-content animate-fade-in"
+                role="tabpanel"
+                id="portal-tabpanel-patients"
+                aria-labelledby="portal-tab-patients"
+                tabIndex={-1}
+              >
                 {/* Stats Summary Cards */}
-                <div className="patients-stats-row">
+                <div className="patients-stats-row" role="region" aria-label="Patient demographics summary">
                   <div className="patients-stat-card patients-stat-total">
                     <div className="patients-stat-icon">
-                      <i className="fa-solid fa-users"></i>
+                      <i className="fa-solid fa-users" aria-hidden="true"></i>
                     </div>
                     <div className="patients-stat-info">
                       <span className="patients-stat-number">{patientsList.length}</span>
@@ -2197,7 +2222,7 @@ function App() {
                   </div>
                   <div className="patients-stat-card patients-stat-male">
                     <div className="patients-stat-icon">
-                      <i className="fa-solid fa-mars"></i>
+                      <i className="fa-solid fa-mars" aria-hidden="true"></i>
                     </div>
                     <div className="patients-stat-info">
                       <span className="patients-stat-number">{maleCount}</span>
@@ -2206,7 +2231,7 @@ function App() {
                   </div>
                   <div className="patients-stat-card patients-stat-female">
                     <div className="patients-stat-icon">
-                      <i className="fa-solid fa-venus"></i>
+                      <i className="fa-solid fa-venus" aria-hidden="true"></i>
                     </div>
                     <div className="patients-stat-info">
                       <span className="patients-stat-number">{femaleCount}</span>
@@ -2215,7 +2240,7 @@ function App() {
                   </div>
                   <div className="patients-stat-card patients-stat-other">
                     <div className="patients-stat-icon">
-                      <i className="fa-solid fa-user-group"></i>
+                      <i className="fa-solid fa-user-group" aria-hidden="true"></i>
                     </div>
                     <div className="patients-stat-info">
                       <span className="patients-stat-number">{otherCount}</span>
@@ -2227,28 +2252,62 @@ function App() {
                 {/* Header with Search */}
                 <div className="patients-header-bar">
                   <div className="patients-header-left">
-                    <h2 className="portal-view-title">
-                      <i className="fa-solid fa-address-book" style={{ color: 'var(--primary)', marginRight: '10px', fontSize: '1.4rem' }}></i>
+                    <h2 className="portal-view-title" id="patients-heading">
+                      <i className="fa-solid fa-address-book" style={{ color: 'var(--primary)', marginRight: '10px', fontSize: '1.4rem' }} aria-hidden="true"></i>
                       Patients Directory
                     </h2>
-                    <span className="patients-count-badge">{filteredPatients.length} {filteredPatients.length === 1 ? 'record' : 'records'} found</span>
+                    <span className="patients-count-badge" aria-live="polite">
+                      {filteredPatients.length} {filteredPatients.length === 1 ? 'record' : 'records'} found
+                    </span>
                   </div>
-                  <div className="patients-search-bar">
-                    <i className="fa-solid fa-magnifying-glass patients-search-icon"></i>
+                  <div className="patients-search-bar" role="search">
+                    <label htmlFor="patients-directory-search-input" className="sr-only">Search patients by name or phone</label>
+                    <i className="fa-solid fa-magnifying-glass patients-search-icon" aria-hidden="true"></i>
                     <input 
-                      type="text" 
+                      ref={patientsDirectorySearchRef}
+                      id="patients-directory-search-input"
+                      type="search" 
                       className="patients-search-input" 
                       placeholder="Search by name or phone..." 
                       value={searchQuery}
                       onChange={handleSearchChange}
+                      aria-label="Search patients by name or phone number"
+                      autoComplete="off"
+                      onKeyDown={(e) => {
+                        if (e.key === 'ArrowDown') {
+                          e.preventDefault();
+                          if (patientsRowActionRefs.current[0]) {
+                            patientsRowActionRefs.current[0].focus();
+                          }
+                        } else if (e.key === 'Escape') {
+                          if (searchQuery) {
+                            e.preventDefault();
+                            setSearchQuery('');
+                            setSearchResults([]);
+                            setPortalPatientsPage(1);
+                          }
+                        } else if (e.key === 'Enter') {
+                          if (paginatedPatients.length === 1) {
+                            e.preventDefault();
+                            handleBookForPatient(paginatedPatients[0]);
+                          }
+                        }
+                      }}
                     />
                     {searchQuery && (
                       <button 
+                        type="button"
                         className="patients-search-clear"
-                        onClick={() => { setSearchQuery(''); setSearchResults([]); setPortalPatientsPage(1); }}
+                        onClick={() => { 
+                          setSearchQuery(''); 
+                          setSearchResults([]); 
+                          setPortalPatientsPage(1);
+                          patientsDirectorySearchRef.current?.focus();
+                        }}
                         aria-label="Clear search"
+                        title="Clear search"
                       >
-                        <i className="fa-solid fa-xmark"></i>
+                        <i className="fa-solid fa-xmark" aria-hidden="true"></i>
                       </button>
                     )}
                   </div>
@@ -2256,9 +2315,9 @@ function App() {
 
                 {/* Patient Table or Empty State */}
                 {filteredPatients.length === 0 ? (
-                  <div className="patients-empty-state">
+                  <div className="patients-empty-state" role="status">
                     <div className="patients-empty-icon">
-                      <i className="fa-solid fa-user-slash"></i>
+                      <i className="fa-solid fa-user-slash" aria-hidden="true"></i>
                     </div>
                     <h3>No Patients Found</h3>
                     <p>
@@ -2269,44 +2328,75 @@ function App() {
                     </p>
                     {searchQuery.trim() && (
                       <button 
+                        type="button"
                         className="patients-empty-btn"
-                        onClick={() => { setSearchQuery(''); setSearchResults([]); setPortalPatientsPage(1); }}
+                        onClick={() => { 
+                          setSearchQuery(''); 
+                          setSearchResults([]); 
+                          setPortalPatientsPage(1);
+                          patientsDirectorySearchRef.current?.focus();
+                        }}
+                        aria-label="Clear search and view all patients"
                       >
-                        <i className="fa-solid fa-arrow-rotate-left"></i> Clear Search
+                        <i className="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i> Clear Search
                       </button>
                     )}
                     {!searchQuery.trim() && (
                       <button 
+                        type="button"
                         className="patients-empty-btn"
                         onClick={() => setPortalTab('new-booking')}
+                        aria-label="Go to new booking tab"
                       >
-                        <i className="fa-solid fa-plus"></i> New Booking
+                        <i className="fa-solid fa-plus" aria-hidden="true"></i> New Booking
                       </button>
                     )}
                   </div>
                 ) : (
                   <div className="patients-table-card">
                     {/* Desktop Table View */}
-                    <div className="portal-table-wrapper patients-desktop-view">
-                      <table className="portal-table patients-table">
+                    <div 
+                      className="portal-table-wrapper patients-desktop-view"
+                      role="region"
+                      aria-label="Patients Directory Table"
+                      tabIndex={0}
+                    >
+                      <table className="portal-table patients-table" aria-label="Registered Patients">
                         <thead>
                           <tr>
-                            <th style={{ width: '60px' }}></th>
-                            <th>Patient Name</th>
-                            <th>Phone</th>
-                            <th>Age</th>
-                            <th>Gender</th>
-                            <th>Address</th>
-                            <th style={{ width: '120px', textAlign: 'center' }}>Action</th>
+                            <th scope="col" style={{ width: '60px' }}><span className="sr-only">Avatar</span></th>
+                            <th scope="col">Patient Name</th>
+                            <th scope="col">Phone</th>
+                            <th scope="col">Age</th>
+                            <th scope="col">Gender</th>
+                            <th scope="col">Address</th>
+                            <th scope="col" style={{ width: '120px', textAlign: 'center' }}>Action</th>
                           </tr>
                         </thead>
                         <tbody>
                           {paginatedPatients.map((p, idx) => (
-                            <tr key={p.id ? `p-${p.id}` : `p-row-${idx}`} className="patients-table-row">
+                            <tr 
+                              key={p.id ? `p-${p.id}` : `p-row-${idx}`} 
+                              className="patients-table-row"
+                              onKeyDown={(e) => {
+                                if (e.key === 'ArrowDown') {
+                                  e.preventDefault();
+                                  patientsRowActionRefs.current[idx + 1]?.focus();
+                                } else if (e.key === 'ArrowUp') {
+                                  e.preventDefault();
+                                  if (idx === 0) {
+                                    patientsDirectorySearchRef.current?.focus();
+                                  } else {
+                                    patientsRowActionRefs.current[idx - 1]?.focus();
+                                  }
+                                }
+                              }}
+                            >
                               <td>
                                 <div 
                                   className="patient-avatar"
                                   style={{ background: getAvatarColor(p.name) }}
+                                  aria-hidden="true"
                                 >
                                   {getInitials(p.name)}
                                 </div>
@@ -2318,7 +2408,7 @@ function App() {
                               </td>
                               <td>
                                 <span className="patient-phone-cell">
-                                  <i className="fa-solid fa-phone" style={{ fontSize: '0.7rem', opacity: 0.5, marginRight: '6px' }}></i>
+                                  <i className="fa-solid fa-phone" style={{ fontSize: '0.7rem', opacity: 0.5, marginRight: '6px' }} aria-hidden="true"></i>
                                   {p.phone}
                                 </span>
                               </td>
@@ -2327,7 +2417,7 @@ function App() {
                               </td>
                               <td>
                                 <span className={`patient-gender-badge ${p.gender === 'Male' ? 'gender-male' : p.gender === 'Female' ? 'gender-female' : 'gender-other'}`}>
-                                  <i className={`fa-solid ${p.gender === 'Male' ? 'fa-mars' : p.gender === 'Female' ? 'fa-venus' : 'fa-genderless'}`}></i>
+                                  <i className={`fa-solid ${p.gender === 'Male' ? 'fa-mars' : p.gender === 'Female' ? 'fa-venus' : 'fa-genderless'}`} aria-hidden="true"></i>
                                   {p.gender}
                                 </span>
                               </td>
@@ -2336,12 +2426,27 @@ function App() {
                               </td>
                               <td style={{ textAlign: 'center' }}>
                                 <button 
+                                  ref={el => patientsRowActionRefs.current[idx] = el}
                                   type="button"
                                   className="btn-patient-book"
                                   onClick={() => handleBookForPatient(p)}
                                   title={`Book appointment for ${p.name}`}
+                                  aria-label={`Book appointment for ${p.name}`}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'ArrowDown') {
+                                      e.preventDefault();
+                                      patientsRowActionRefs.current[idx + 1]?.focus();
+                                    } else if (e.key === 'ArrowUp') {
+                                      e.preventDefault();
+                                      if (idx === 0) {
+                                        patientsDirectorySearchRef.current?.focus();
+                                      } else {
+                                        patientsRowActionRefs.current[idx - 1]?.focus();
+                                      }
+                                    }
+                                  }}
                                 >
-                                  <i className="fa-solid fa-calendar-plus"></i>
+                                  <i className="fa-solid fa-calendar-plus" aria-hidden="true"></i>
                                   <span>Book</span>
                                 </button>
                               </td>
@@ -2353,26 +2458,28 @@ function App() {
 
                     {/* Desktop Pagination */}
                     {filteredPatients.length > 0 && (
-                      <div className="pagination-container patients-desktop-view">
-                        <div className="pagination-info">
+                      <div className="pagination-container patients-desktop-view" role="navigation" aria-label="Patients Pagination">
+                        <div className="pagination-info" aria-live="polite">
                           Showing <strong>{startIndexPatients + 1}</strong> to <strong>{Math.min(startIndexPatients + PATIENTS_PER_PAGE, filteredPatients.length)}</strong> of <strong>{filteredPatients.length}</strong> {filteredPatients.length === 1 ? 'patient' : 'patients'} (Page {currentPatientsPage} of {totalPatientsPages})
                         </div>
                         <div className="pagination-btn-group">
                           <button 
+                            type="button"
                             className="pagination-btn" 
                             onClick={() => setPortalPatientsPage(p => Math.max(p - 1, 1))} 
                             disabled={currentPatientsPage <= 1}
                             title="Previous Page"
-                            aria-label="Previous Page"
+                            aria-label="Previous Page of Patients"
                           >
-                            <i className="fa-solid fa-chevron-left"></i>
+                            <i className="fa-solid fa-chevron-left" aria-hidden="true"></i>
                           </button>
                           {getPaginationRange(currentPatientsPage, totalPatientsPages).map((p, idx) => (
                             p === '...' ? (
-                              <span key={`dots-${idx}`} className="pagination-dots">...</span>
+                              <span key={`dots-${idx}`} className="pagination-dots" aria-hidden="true">...</span>
                             ) : (
                               <button 
                                 key={p} 
+                                type="button"
                                 className={`pagination-btn ${currentPatientsPage === p ? 'active' : ''}`}
                                 onClick={() => setPortalPatientsPage(p)}
                                 aria-label={`Page ${p}`}
@@ -2383,13 +2490,14 @@ function App() {
                             )
                           ))}
                           <button 
+                            type="button"
                             className="pagination-btn" 
                             onClick={() => setPortalPatientsPage(p => Math.min(p + 1, totalPatientsPages))} 
                             disabled={currentPatientsPage >= totalPatientsPages}
                             title="Next Page"
-                            aria-label="Next Page"
+                            aria-label="Next Page of Patients"
                           >
-                            <i className="fa-solid fa-chevron-right"></i>
+                            <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
                           </button>
                         </div>
                       </div>
@@ -2399,12 +2507,13 @@ function App() {
                     <div className="patients-mobile-view">
                       <div className="patient-cards-list">
                         {paginatedPatients.map((p, idx) => (
-                          <div className="patient-card" key={p.id ? `pcard-${p.id}` : `pcard-${idx}`}>
+                          <div className="patient-card" key={p.id ? `pcard-${p.id}` : `pcard-${idx}`} tabIndex={0}>
                             <div className="patient-card-header">
                               <div className="patient-card-identity">
                                 <div 
                                   className="patient-avatar"
                                   style={{ background: getAvatarColor(p.name) }}
+                                  aria-hidden="true"
                                 >
                                   {getInitials(p.name)}
                                 </div>
@@ -2413,7 +2522,7 @@ function App() {
                                 </div>
                               </div>
                               <span className={`patient-gender-badge ${p.gender === 'Male' ? 'gender-male' : p.gender === 'Female' ? 'gender-female' : 'gender-other'}`}>
-                                <i className={`fa-solid ${p.gender === 'Male' ? 'fa-mars' : p.gender === 'Female' ? 'fa-venus' : 'fa-genderless'}`}></i>
+                                <i className={`fa-solid ${p.gender === 'Male' ? 'fa-mars' : p.gender === 'Female' ? 'fa-venus' : 'fa-genderless'}`} aria-hidden="true"></i>
                                 {p.gender}
                               </span>
                             </div>
@@ -2421,8 +2530,8 @@ function App() {
                               <div className="patient-card-detail-item">
                                 <span className="patient-card-detail-label">Phone</span>
                                 <span className="patient-card-detail-value">
-                                  <a href={`tel:${p.phone}`} className="patient-card-phone-link">
-                                    <i className="fa-solid fa-phone"></i> {p.phone}
+                                  <a href={`tel:${p.phone}`} className="patient-card-phone-link" aria-label={`Call ${p.name} at ${p.phone}`}>
+                                    <i className="fa-solid fa-phone" aria-hidden="true"></i> {p.phone}
                                   </a>
                                 </span>
                               </div>
@@ -2443,8 +2552,9 @@ function App() {
                                 className="btn-patient-book" 
                                 style={{ width: '100%', justifyContent: 'center', padding: '9px 16px' }}
                                 onClick={() => handleBookForPatient(p)}
+                                aria-label={`Book appointment for ${p.name}`}
                               >
-                                <i className="fa-solid fa-calendar-plus"></i> Book Appointment
+                                <i className="fa-solid fa-calendar-plus" aria-hidden="true"></i> Book Appointment
                               </button>
                             </div>
                           </div>
@@ -2453,26 +2563,28 @@ function App() {
 
                       {/* Mobile Pagination */}
                       {filteredPatients.length > 0 && (
-                        <div className="pagination-container pagination-card" style={{ marginTop: '16px' }}>
-                          <div className="pagination-info">
+                        <div className="pagination-container pagination-card" style={{ marginTop: '16px' }} role="navigation" aria-label="Patients Mobile Pagination">
+                          <div className="pagination-info" aria-live="polite">
                             Showing <strong>{startIndexPatients + 1}</strong> to <strong>{Math.min(startIndexPatients + PATIENTS_PER_PAGE, filteredPatients.length)}</strong> of <strong>{filteredPatients.length}</strong> {filteredPatients.length === 1 ? 'patient' : 'patients'} (Page {currentPatientsPage} of {totalPatientsPages})
                           </div>
                           <div className="pagination-btn-group">
                             <button 
+                              type="button"
                               className="pagination-btn" 
                               onClick={() => setPortalPatientsPage(p => Math.max(p - 1, 1))} 
                               disabled={currentPatientsPage <= 1}
                               title="Previous Page"
-                              aria-label="Previous Page"
+                              aria-label="Previous Page of Patients"
                             >
-                              <i className="fa-solid fa-chevron-left"></i>
+                              <i className="fa-solid fa-chevron-left" aria-hidden="true"></i>
                             </button>
                             {getPaginationRange(currentPatientsPage, totalPatientsPages).map((p, idx) => (
                               p === '...' ? (
-                                <span key={`dots-${idx}`} className="pagination-dots">...</span>
+                                <span key={`dots-m-${idx}`} className="pagination-dots" aria-hidden="true">...</span>
                               ) : (
                                 <button 
-                                  key={p} 
+                                  key={`m-page-${p}`} 
+                                  type="button"
                                   className={`pagination-btn ${currentPatientsPage === p ? 'active' : ''}`}
                                   onClick={() => setPortalPatientsPage(p)}
                                   aria-label={`Page ${p}`}
@@ -2483,13 +2595,14 @@ function App() {
                               )
                             ))}
                             <button 
+                              type="button"
                               className="pagination-btn" 
                               onClick={() => setPortalPatientsPage(p => Math.min(p + 1, totalPatientsPages))} 
                               disabled={currentPatientsPage >= totalPatientsPages}
                               title="Next Page"
-                              aria-label="Next Page"
+                              aria-label="Next Page of Patients"
                             >
-                              <i className="fa-solid fa-chevron-right"></i>
+                              <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
                             </button>
                           </div>
                         </div>
@@ -2502,7 +2615,13 @@ function App() {
             })()}
 
             {portalTab === 'bookings' && (
-              <div className="portal-tab-content animate-fade-in">
+              <div 
+                className="portal-tab-content animate-fade-in"
+                role="tabpanel"
+                id="portal-tabpanel-bookings"
+                aria-labelledby="portal-tab-bookings"
+                tabIndex={-1}
+              >
                 <div className="portal-view-header">
                   <h2 className="portal-view-title">Bookings & Billing History</h2>
                 </div>
