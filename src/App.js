@@ -423,6 +423,7 @@ function App() {
   const [emptyPriceAlert, setEmptyPriceAlert] = useState(null);
   const [quickModalPrice, setQuickModalPrice] = useState('');
   const [dashboardStats, setDashboardStats] = useState(null);
+  const [isSavingBooking, setIsSavingBooking] = useState(false);
 
   // Fetch initial portal data
   useEffect(() => {
@@ -552,6 +553,8 @@ function App() {
 
   const handleSaveBooking = async (e) => {
     e.preventDefault();
+    if (isSavingBooking) return;
+
     if (!selectedPatient && !isNewPatientForm) {
       alert('Please search and select a patient, or register a new one.');
       return;
@@ -572,24 +575,41 @@ function App() {
       return;
     }
 
+    setIsSavingBooking(true);
     try {
       let patientObj = selectedPatient;
       if (isNewPatientForm) {
-        if (!newPatientDetails.name || !newPatientDetails.phone || !newPatientDetails.age) {
+        const trimmedName = (newPatientDetails.name || '').trim();
+        const trimmedPhone = (newPatientDetails.phone || '').trim();
+
+        if (!trimmedName || !trimmedPhone || !newPatientDetails.age) {
           alert('Name, Phone, and Age are required fields for patient registration.');
+          setIsSavingBooking(false);
           return;
         }
-        patientObj = await db.savePatient({
-          name: newPatientDetails.name,
-          phone: newPatientDetails.phone,
-          age: parseInt(newPatientDetails.age, 10),
-          gender: newPatientDetails.gender,
-          address: newPatientDetails.address
-        });
-        
-        // Refresh patients cache
-        const updatedPatients = await db.getPatients();
-        setPatientsList(updatedPatients);
+
+        // Check if patient with same name and phone already exists
+        const existingPatient = patientsList.find(p =>
+          p.name && p.phone &&
+          p.name.trim().toLowerCase() === trimmedName.toLowerCase() &&
+          p.phone.trim() === trimmedPhone
+        );
+
+        if (existingPatient) {
+          patientObj = existingPatient;
+        } else {
+          patientObj = await db.savePatient({
+            name: trimmedName,
+            phone: trimmedPhone,
+            age: parseInt(newPatientDetails.age, 10),
+            gender: newPatientDetails.gender,
+            address: (newPatientDetails.address || '').trim()
+          });
+          
+          // Refresh patients cache
+          const updatedPatients = await db.getPatients();
+          setPatientsList(updatedPatients);
+        }
       }
 
       const subtotal = selectedServices.reduce((acc, s) => {
@@ -641,7 +661,9 @@ function App() {
       setSearchResults([]);
     } catch (err) {
       console.error("Failed to book appointment", err);
-      alert("Error generating booking. Please try again.");
+      alert(err.message || "Error generating booking. Please try again.");
+    } finally {
+      setIsSavingBooking(false);
     }
   };
 
@@ -1686,6 +1708,37 @@ function App() {
                         onChange={(e) => setNewPatientDetails({...newPatientDetails, address: e.target.value})}
                       />
                     </div>
+                    {/* Duplicate patient detection warning */}
+                    {(() => {
+                      const trimmedName = (newPatientDetails.name || '').trim().toLowerCase();
+                      const trimmedPhone = (newPatientDetails.phone || '').trim();
+                      if (trimmedName && trimmedPhone) {
+                        const duplicate = patientsList.find(p =>
+                          p.name && p.phone &&
+                          p.name.trim().toLowerCase() === trimmedName &&
+                          p.phone.trim() === trimmedPhone
+                        );
+                        if (duplicate) {
+                          return (
+                            <div className="portal-alert portal-alert-warning" style={{ marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <i className="fa-solid fa-triangle-exclamation"></i>
+                                <span>Patient <strong>{duplicate.name}</strong> ({duplicate.phone}) is already registered ({duplicate.age} Yrs / {duplicate.gender}).</span>
+                              </div>
+                              <button
+                                type="button"
+                                className="btn btn-primary"
+                                style={{ padding: '5px 12px', fontSize: '0.82rem', whiteSpace: 'nowrap', flexShrink: 0 }}
+                                onClick={() => handleSelectPatient(duplicate)}
+                              >
+                                <i className="fa-solid fa-check"></i> Select Existing Patient
+                              </button>
+                            </div>
+                          );
+                        }
+                      }
+                      return null;
+                    })()}
                     <div style={{ marginTop: '15px' }}>
                       <button 
                         type="button" 
@@ -1803,9 +1856,11 @@ function App() {
                         <button 
                           onClick={handleSaveBooking}
                           className="booking-submit-btn"
+                          disabled={isSavingBooking}
+                          style={isSavingBooking ? { opacity: 0.7, cursor: 'not-allowed' } : {}}
                         >
-                          <i className="fa-solid fa-receipt"></i>
-                          <span>Complete & Generate Invoice</span>
+                          <i className={isSavingBooking ? "fa-solid fa-spinner fa-spin" : "fa-solid fa-receipt"}></i>
+                          <span>{isSavingBooking ? 'Processing Booking...' : 'Complete & Generate Invoice'}</span>
                         </button>
                       </div>
                     </>
