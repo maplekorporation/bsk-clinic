@@ -4983,9 +4983,9 @@ body.dark-mode .portal-header-logout-btn:hover {
 }
 
 .portal-main {
-    padding: 40px;
+    padding: 30px 40px 60px 40px;
     overflow-y: auto;
-    max-height: calc(100vh - 80px);
+    min-height: calc(100vh - 80px);
     display: flex;
     flex-direction: column;
 }
@@ -4993,23 +4993,11 @@ body.dark-mode .portal-header-logout-btn:hover {
 .portal-tab-content {
     display: flex;
     flex-direction: column;
-    flex: 1;
-    min-height: 0;
+    width: 100%;
 }
 
 .portal-tab-content > .portal-view-header {
     flex-shrink: 0;
-}
-
-.portal-tab-content > .portal-table-wrapper {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-}
-
-.portal-tab-content > .portal-table-wrapper > .portal-table {
-    flex: 1;
 }
 
 .animate-fade-in {
@@ -7159,13 +7147,13 @@ body.dark-mode .portal-table-wrapper::-webkit-scrollbar-thumb:hover {
     border-radius: var(--radius-md);
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
     border: 1px solid var(--border-color);
-    overflow: hidden;
-    flex: 1;
+    width: 100%;
 }
 
 .patients-table-card .portal-table-wrapper {
     border: none;
-    border-radius: 0;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    overflow-x: auto;
 }
 
 .patients-table .patients-table-row {

@@ -350,6 +350,8 @@ function App() {
   const [bookingsList, setBookingsList] = useState([]);
   const [adminBookingsPage, setAdminBookingsPage] = useState(1);
   const [portalBookingsPage, setPortalBookingsPage] = useState(1);
+  const [portalPatientsPage, setPortalPatientsPage] = useState(1);
+  const [adminPatientsPage, setAdminPatientsPage] = useState(1);
   const [overviewBookingsPage, setOverviewBookingsPage] = useState(1);
 
   const formatBookingTime = (item) => {
@@ -503,8 +505,21 @@ function App() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  // Refresh patients whenever visiting patients tab
+  useEffect(() => {
+    if (portalTab === 'patients' && db.isLoggedIn()) {
+      db.getPatients()
+        .then(patients => {
+          if (patients) setPatientsList(patients);
+        })
+        .catch(err => console.error("Error refreshing patients", err));
+    }
+  }, [portalTab]);
+
   const handleSearchChange = (e) => {
     setSearchQuery(e.target.value);
+    setPortalPatientsPage(1);
+    setAdminPatientsPage(1);
   };
 
   const handleSelectPatient = (patient) => {
@@ -684,6 +699,8 @@ function App() {
       setBookingsList(updatedBookings);
       setAdminBookingsPage(1);
       setPortalBookingsPage(1);
+      setPortalPatientsPage(1);
+      setAdminPatientsPage(1);
 
       // Open invoice modal
       setActiveInvoice(savedBkg);
@@ -2140,17 +2157,25 @@ function App() {
               const femaleCount = patientsList.filter(p => p.gender === 'Female').length;
               const otherCount = patientsList.length - maleCount - femaleCount;
               const getInitials = (name) => {
-                const parts = name.split(' ');
+                if (!name) return 'PT';
+                const parts = name.trim().split(/\s+/);
                 return parts.length >= 2 
                   ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
                   : name.substring(0, 2).toUpperCase();
               };
               const avatarColors = ['#0F7EA8', '#2EC4B6', '#E76F51', '#8B5CF6', '#F59E0B', '#EC4899', '#10B981', '#6366F1'];
               const getAvatarColor = (name) => {
+                const safeName = name || 'Patient';
                 let hash = 0;
-                for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+                for (let i = 0; i < safeName.length; i++) hash = safeName.charCodeAt(i) + ((hash << 5) - hash);
                 return avatarColors[Math.abs(hash) % avatarColors.length];
               };
+
+              const PATIENTS_PER_PAGE = 10;
+              const totalPatientsPages = Math.max(1, Math.ceil(filteredPatients.length / PATIENTS_PER_PAGE));
+              const currentPatientsPage = Math.min(Math.max(1, portalPatientsPage), totalPatientsPages);
+              const startIndexPatients = (currentPatientsPage - 1) * PATIENTS_PER_PAGE;
+              const paginatedPatients = filteredPatients.slice(startIndexPatients, startIndexPatients + PATIENTS_PER_PAGE);
 
               return (
               <div className="portal-tab-content animate-fade-in">
@@ -2215,7 +2240,7 @@ function App() {
                     {searchQuery && (
                       <button 
                         className="patients-search-clear"
-                        onClick={() => { setSearchQuery(''); setSearchResults([]); }}
+                        onClick={() => { setSearchQuery(''); setSearchResults([]); setPortalPatientsPage(1); }}
                         aria-label="Clear search"
                       >
                         <i className="fa-solid fa-xmark"></i>
@@ -2240,7 +2265,7 @@ function App() {
                     {searchQuery.trim() && (
                       <button 
                         className="patients-empty-btn"
-                        onClick={() => { setSearchQuery(''); setSearchResults([]); }}
+                        onClick={() => { setSearchQuery(''); setSearchResults([]); setPortalPatientsPage(1); }}
                       >
                         <i className="fa-solid fa-arrow-rotate-left"></i> Clear Search
                       </button>
@@ -2270,8 +2295,8 @@ function App() {
                           </tr>
                         </thead>
                         <tbody>
-                          {filteredPatients.map(p => (
-                            <tr key={p.id} className="patients-table-row">
+                          {paginatedPatients.map((p, idx) => (
+                            <tr key={p.id ? `p-${p.id}` : `p-row-${idx}`} className="patients-table-row">
                               <td>
                                 <div 
                                   className="patient-avatar"
@@ -2309,11 +2334,55 @@ function App() {
                       </table>
                     </div>
 
+                    {/* Desktop Pagination */}
+                    {filteredPatients.length > 0 && (
+                      <div className="pagination-container patients-desktop-view">
+                        <div className="pagination-info">
+                          Showing <strong>{startIndexPatients + 1}</strong> to <strong>{Math.min(startIndexPatients + PATIENTS_PER_PAGE, filteredPatients.length)}</strong> of <strong>{filteredPatients.length}</strong> {filteredPatients.length === 1 ? 'patient' : 'patients'} (Page {currentPatientsPage} of {totalPatientsPages})
+                        </div>
+                        <div className="pagination-btn-group">
+                          <button 
+                            className="pagination-btn" 
+                            onClick={() => setPortalPatientsPage(p => Math.max(p - 1, 1))} 
+                            disabled={currentPatientsPage <= 1}
+                            title="Previous Page"
+                            aria-label="Previous Page"
+                          >
+                            <i className="fa-solid fa-chevron-left"></i>
+                          </button>
+                          {getPaginationRange(currentPatientsPage, totalPatientsPages).map((p, idx) => (
+                            p === '...' ? (
+                              <span key={`dots-${idx}`} className="pagination-dots">...</span>
+                            ) : (
+                              <button 
+                                key={p} 
+                                className={`pagination-btn ${currentPatientsPage === p ? 'active' : ''}`}
+                                onClick={() => setPortalPatientsPage(p)}
+                                aria-label={`Page ${p}`}
+                                aria-current={currentPatientsPage === p ? 'page' : undefined}
+                              >
+                                {p}
+                              </button>
+                            )
+                          ))}
+                          <button 
+                            className="pagination-btn" 
+                            onClick={() => setPortalPatientsPage(p => Math.min(p + 1, totalPatientsPages))} 
+                            disabled={currentPatientsPage >= totalPatientsPages}
+                            title="Next Page"
+                            aria-label="Next Page"
+                          >
+                            <i className="fa-solid fa-chevron-right"></i>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Mobile Card View */}
                     <div className="patients-mobile-view">
                       <div className="patient-cards-list">
-                        {filteredPatients.map(p => (
-                          <div className="patient-card" key={p.id}>
+                        {paginatedPatients.map((p, idx) => (
+                          <div className="patient-card" key={p.id ? `pcard-${p.id}` : `pcard-${idx}`}>
                             <div className="patient-card-header">
                               <div className="patient-card-identity">
                                 <div 
@@ -2354,6 +2423,50 @@ function App() {
                           </div>
                         ))}
                       </div>
+
+                      {/* Mobile Pagination */}
+                      {filteredPatients.length > 0 && (
+                        <div className="pagination-container pagination-card" style={{ marginTop: '16px' }}>
+                          <div className="pagination-info">
+                            Showing <strong>{startIndexPatients + 1}</strong> to <strong>{Math.min(startIndexPatients + PATIENTS_PER_PAGE, filteredPatients.length)}</strong> of <strong>{filteredPatients.length}</strong> {filteredPatients.length === 1 ? 'patient' : 'patients'} (Page {currentPatientsPage} of {totalPatientsPages})
+                          </div>
+                          <div className="pagination-btn-group">
+                            <button 
+                              className="pagination-btn" 
+                              onClick={() => setPortalPatientsPage(p => Math.max(p - 1, 1))} 
+                              disabled={currentPatientsPage <= 1}
+                              title="Previous Page"
+                              aria-label="Previous Page"
+                            >
+                              <i className="fa-solid fa-chevron-left"></i>
+                            </button>
+                            {getPaginationRange(currentPatientsPage, totalPatientsPages).map((p, idx) => (
+                              p === '...' ? (
+                                <span key={`dots-${idx}`} className="pagination-dots">...</span>
+                              ) : (
+                                <button 
+                                  key={p} 
+                                  className={`pagination-btn ${currentPatientsPage === p ? 'active' : ''}`}
+                                  onClick={() => setPortalPatientsPage(p)}
+                                  aria-label={`Page ${p}`}
+                                  aria-current={currentPatientsPage === p ? 'page' : undefined}
+                                >
+                                  {p}
+                                </button>
+                              )
+                            ))}
+                            <button 
+                              className="pagination-btn" 
+                              onClick={() => setPortalPatientsPage(p => Math.min(p + 1, totalPatientsPages))} 
+                              disabled={currentPatientsPage >= totalPatientsPages}
+                              title="Next Page"
+                              aria-label="Next Page"
+                            >
+                              <i className="fa-solid fa-chevron-right"></i>
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -3459,7 +3572,14 @@ function App() {
                     <h3>No Patients Found</h3>
                     <p>No registered patient records match the selected filter: <strong>{patientGenderFilter}</strong>.</p>
                   </div>
-                ) : (
+                ) : (() => {
+                  const PATIENTS_PER_PAGE = 10;
+                  const totalAdminPatientPages = Math.max(1, Math.ceil(filteredPatientsList.length / PATIENTS_PER_PAGE));
+                  const currentAdminPatientsPage = Math.min(Math.max(1, adminPatientsPage), totalAdminPatientPages);
+                  const startIndexAdminPatients = (currentAdminPatientsPage - 1) * PATIENTS_PER_PAGE;
+                  const paginatedAdminPatients = filteredPatientsList.slice(startIndexAdminPatients, startIndexAdminPatients + PATIENTS_PER_PAGE);
+
+                  return (
                   <div className="admin-analytics-card">
                     {/* Desktop Table View */}
                     <div className="admin-table-wrapper patients-desktop-view">
@@ -3475,7 +3595,7 @@ function App() {
                           </tr>
                         </thead>
                         <tbody>
-                          {filteredPatientsList.map(p => (
+                          {paginatedAdminPatients.map(p => (
                             <tr key={p.id}>
                               <td>
                                 <div className="admin-avatar" style={{ background: getAvatarColor(p.name) }}>
@@ -3503,10 +3623,54 @@ function App() {
                       </table>
                     </div>
 
+                    {/* Desktop Pagination */}
+                    {filteredPatientsList.length > 0 && (
+                      <div className="pagination-container patients-desktop-view">
+                        <div className="pagination-info">
+                          Showing <strong>{startIndexAdminPatients + 1}</strong> to <strong>{Math.min(startIndexAdminPatients + PATIENTS_PER_PAGE, filteredPatientsList.length)}</strong> of <strong>{filteredPatientsList.length}</strong> {filteredPatientsList.length === 1 ? 'patient' : 'patients'} (Page {currentAdminPatientsPage} of {totalAdminPatientPages})
+                        </div>
+                        <div className="pagination-btn-group">
+                          <button 
+                            className="pagination-btn" 
+                            onClick={() => setAdminPatientsPage(p => Math.max(p - 1, 1))} 
+                            disabled={currentAdminPatientsPage <= 1}
+                            title="Previous Page"
+                            aria-label="Previous Page"
+                          >
+                            <i className="fa-solid fa-chevron-left"></i>
+                          </button>
+                          {getPaginationRange(currentAdminPatientsPage, totalAdminPatientPages).map((p, idx) => (
+                            p === '...' ? (
+                              <span key={`dots-${idx}`} className="pagination-dots">...</span>
+                            ) : (
+                              <button 
+                                key={p} 
+                                className={`pagination-btn ${currentAdminPatientsPage === p ? 'active' : ''}`}
+                                onClick={() => setAdminPatientsPage(p)}
+                                aria-label={`Page ${p}`}
+                                aria-current={currentAdminPatientsPage === p ? 'page' : undefined}
+                              >
+                                {p}
+                              </button>
+                            )
+                          ))}
+                          <button 
+                            className="pagination-btn" 
+                            onClick={() => setAdminPatientsPage(p => Math.min(p + 1, totalAdminPatientPages))} 
+                            disabled={currentAdminPatientsPage >= totalAdminPatientPages}
+                            title="Next Page"
+                            aria-label="Next Page"
+                          >
+                            <i className="fa-solid fa-chevron-right"></i>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Mobile Card View */}
                     <div className="patients-mobile-view">
                       <div className="patient-cards-list">
-                        {filteredPatientsList.map(p => (
+                        {paginatedAdminPatients.map(p => (
                           <div className="patient-card" key={p.id}>
                             <div className="patient-card-header">
                               <div className="patient-card-identity">
@@ -3545,9 +3709,54 @@ function App() {
                           </div>
                         ))}
                       </div>
+
+                      {/* Mobile Pagination */}
+                      {filteredPatientsList.length > 0 && (
+                        <div className="pagination-container pagination-card" style={{ marginTop: '16px' }}>
+                          <div className="pagination-info">
+                            Showing <strong>{startIndexAdminPatients + 1}</strong> to <strong>{Math.min(startIndexAdminPatients + PATIENTS_PER_PAGE, filteredPatientsList.length)}</strong> of <strong>{filteredPatientsList.length}</strong> {filteredPatientsList.length === 1 ? 'patient' : 'patients'} (Page {currentAdminPatientsPage} of {totalAdminPatientPages})
+                          </div>
+                          <div className="pagination-btn-group">
+                            <button 
+                              className="pagination-btn" 
+                              onClick={() => setAdminPatientsPage(p => Math.max(p - 1, 1))} 
+                              disabled={currentAdminPatientsPage <= 1}
+                              title="Previous Page"
+                              aria-label="Previous Page"
+                            >
+                              <i className="fa-solid fa-chevron-left"></i>
+                            </button>
+                            {getPaginationRange(currentAdminPatientsPage, totalAdminPatientPages).map((p, idx) => (
+                              p === '...' ? (
+                                <span key={`dots-${idx}`} className="pagination-dots">...</span>
+                              ) : (
+                                <button 
+                                  key={p} 
+                                  className={`pagination-btn ${currentAdminPatientsPage === p ? 'active' : ''}`}
+                                  onClick={() => setAdminPatientsPage(p)}
+                                  aria-label={`Page ${p}`}
+                                  aria-current={currentAdminPatientsPage === p ? 'page' : undefined}
+                                >
+                                  {p}
+                                </button>
+                              )
+                            ))}
+                            <button 
+                              className="pagination-btn" 
+                              onClick={() => setAdminPatientsPage(p => Math.min(p + 1, totalAdminPatientPages))} 
+                              disabled={currentAdminPatientsPage >= totalAdminPatientPages}
+                              title="Next Page"
+                              aria-label="Next Page"
+                            >
+                              <i className="fa-solid fa-chevron-right"></i>
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
-                )}
+                  );
+                })()}
               </div>
             )}
 
