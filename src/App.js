@@ -532,6 +532,11 @@ function App() {
     }, 60);
   };
 
+  const handleBookForPatient = (patient) => {
+    handleSelectPatient(patient);
+    setPortalTab('new-booking');
+  };
+
   const handleToggleService = (service) => {
     const isSelected = selectedServices.some(s => s.id === service.id);
     if (isSelected) {
@@ -2292,6 +2297,7 @@ function App() {
                             <th>Age</th>
                             <th>Gender</th>
                             <th>Address</th>
+                            <th style={{ width: '120px', textAlign: 'center' }}>Action</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -2327,6 +2333,17 @@ function App() {
                               </td>
                               <td>
                                 <span className="patient-address-cell">{p.address || '—'}</span>
+                              </td>
+                              <td style={{ textAlign: 'center' }}>
+                                <button 
+                                  type="button"
+                                  className="btn-patient-book"
+                                  onClick={() => handleBookForPatient(p)}
+                                  title={`Book appointment for ${p.name}`}
+                                >
+                                  <i className="fa-solid fa-calendar-plus"></i>
+                                  <span>Book</span>
+                                </button>
                               </td>
                             </tr>
                           ))}
@@ -2419,6 +2436,16 @@ function App() {
                                   <span className="patient-card-detail-value">{p.address}</span>
                                 </div>
                               )}
+                            </div>
+                            <div className="patient-card-actions" style={{ marginTop: '14px', paddingTop: '10px', borderTop: '1px solid var(--border-color)' }}>
+                              <button 
+                                type="button" 
+                                className="btn-patient-book" 
+                                style={{ width: '100%', justifyContent: 'center', padding: '9px 16px' }}
+                                onClick={() => handleBookForPatient(p)}
+                              >
+                                <i className="fa-solid fa-calendar-plus"></i> Book Appointment
+                              </button>
                             </div>
                           </div>
                         ))}
