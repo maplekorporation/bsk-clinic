@@ -784,7 +784,7 @@ function App() {
               {t.hero.subtitle}
             </p>
             <div className="hero-actions">
-              <a href="tel:+919674163040" className="btn btn-secondary">{t.hero.callNow} <i className="fa-solid fa-phone" aria-hidden="true"></i></a>
+              <a href="tel:+919999999999" className="btn btn-secondary">{t.hero.callNow} <i className="fa-solid fa-phone" aria-hidden="true"></i></a>
             </div>
           </div>
           
@@ -4621,7 +4621,7 @@ function App() {
                         Baak O Shrobon Kendra, Surakshya Polyclinic, 2nd Floor, Ganga Ghosh Building, Beside Style Bazar, Raghunathganj, Murshidabad - 742225
                       </p>
                       <p className="invoice-clinic-contact-text">
-                        Ph: +91 9674163040 | Email: avijitchoudhuryent79@gmail.com
+                        Ph: +91 9999999999 | Email: avijitchoudhuryent79@gmail.com
                       </p>
                     </div>
                   </div>
@@ -4807,10 +4807,10 @@ function App() {
           >
             <i className="fa-solid fa-arrow-up"></i>
           </button>
-          <a href="tel:+919674163040" className="floating-btn floating-btn-call" aria-label="Call Baak o Shrobon Kendra Support">
+          <a href="tel:+919999999999" className="floating-btn floating-btn-call" aria-label="Call Baak o Shrobon Kendra Support">
             <i className="fa-solid fa-phone"></i>
           </a>
-          <a href="https://wa.me/919674163040" className="floating-btn floating-btn-whatsapp" target="_blank" rel="noopener noreferrer" aria-label="Chat with us on WhatsApp">
+          <a href="https://wa.me/919999999999" className="floating-btn floating-btn-whatsapp" target="_blank" rel="noopener noreferrer" aria-label="Chat with us on WhatsApp">
             <i className="fa-brands fa-whatsapp"></i>
           </a>
         </div>
