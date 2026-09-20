@@ -408,7 +408,7 @@ function App() {
   const [selectedServices, setSelectedServices] = useState([]);
   
   const [paymentMode, setPaymentMode] = useState('UPI');
-  const [referredBy, setReferredBy] = useState('Self');
+  const [referredBy, setReferredBy] = useState('');
   
   const [isNewPatientForm, setIsNewPatientForm] = useState(false);
   const [newPatientDetails, setNewPatientDetails] = useState({
@@ -424,6 +424,19 @@ function App() {
   const [quickModalPrice, setQuickModalPrice] = useState('');
   const [dashboardStats, setDashboardStats] = useState(null);
   const [isSavingBooking, setIsSavingBooking] = useState(false);
+
+  // Accessibility and keyboard navigation refs for booking & registration flow
+  const patientSearchInputRef = useRef(null);
+  const registerNewPatientBtnRef = useRef(null);
+  const registerFromSearchBtnRef = useRef(null);
+  const newPatientNameRef = useRef(null);
+  const newPatientPhoneRef = useRef(null);
+  const newPatientAgeRef = useRef(null);
+  const newPatientGenderRef = useRef(null);
+  const newPatientAddressRef = useRef(null);
+  const changePatientBtnRef = useRef(null);
+  const patientResultRefs = useRef([]);
+  const serviceMultiSelectRef = useRef(null);
 
   // Fetch initial portal data
   useEffect(() => {
@@ -499,6 +512,9 @@ function App() {
     setIsNewPatientForm(false);
     setSearchQuery('');
     setSearchResults([]);
+    setTimeout(() => {
+      changePatientBtnRef.current?.focus();
+    }, 60);
   };
 
   const handleToggleService = (service) => {
@@ -523,7 +539,7 @@ function App() {
     setSelectedPatient(null);
     setSelectedServices([]);
     setPaymentMode('UPI');
-    setReferredBy('Self');
+    setReferredBy('');
     setIsNewPatientForm(false);
     setNewPatientDetails({ name: '', phone: '', age: '', gender: 'Male', address: '' });
     setSearchQuery('');
@@ -541,14 +557,36 @@ function App() {
   const triggerNewPatientRegister = () => {
     setIsNewPatientForm(true);
     setSelectedPatient(null);
+    const trimmed = searchQuery.trim();
+    const isNum = /^\d+$/.test(trimmed);
     setNewPatientDetails({
-      name: searchQuery,
-      phone: /^\d+$/.test(searchQuery) ? searchQuery : '',
+      name: isNum ? '' : trimmed,
+      phone: isNum ? trimmed : '',
       age: '',
       gender: 'Male',
       address: ''
     });
     setSearchResults([]);
+    setTimeout(() => {
+      if (isNum) {
+        newPatientNameRef.current?.focus();
+      } else if (trimmed) {
+        newPatientPhoneRef.current?.focus();
+      } else {
+        newPatientNameRef.current?.focus();
+      }
+    }, 60);
+  };
+
+  const handleCancelNewPatient = () => {
+    setIsNewPatientForm(false);
+    setTimeout(() => {
+      if (searchQuery.trim()) {
+        patientSearchInputRef.current?.focus();
+      } else {
+        registerNewPatientBtnRef.current?.focus() || patientSearchInputRef.current?.focus();
+      }
+    }, 60);
   };
 
   const handleSaveBooking = async (e) => {
@@ -634,7 +672,7 @@ function App() {
         gst,
         total,
         paymentMode,
-        referredBy,
+        referredBy: (referredBy || '').trim() || 'Self',
         date: new Date().toISOString().split('T')[0],
         status: 'Completed'
       };
@@ -654,7 +692,7 @@ function App() {
       setSelectedPatient(null);
       setSelectedServices([]);
       setPaymentMode('UPI');
-      setReferredBy('Self');
+      setReferredBy('');
       setIsNewPatientForm(false);
       setNewPatientDetails({ name: '', phone: '', age: '', gender: 'Male', address: '' });
       setSearchQuery('');
@@ -714,28 +752,33 @@ function App() {
             <div className="nav-actions">
               {view === 'admin' && (
                 <button 
+                  type="button"
                   className="portal-header-logout-btn admin-header-logout"
                   title="Logout"
+                  aria-label="Logout from admin portal"
                   onClick={handleAdminLogout}
                 >
-                  <i className="fa-solid fa-right-from-bracket"></i>
+                  <i className="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
                   <span className="logout-text">Logout</span>
                 </button>
               )}
 
               {view === 'receptionist' && (
                 <button 
+                  type="button"
                   className="portal-header-logout-btn"
                   title="Logout"
+                  aria-label="Logout from reception desk"
                   onClick={handleLogout}
                 >
-                  <i className="fa-solid fa-right-from-bracket"></i>
+                  <i className="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
                   <span className="logout-text">Logout</span>
                 </button>
               )}
 
               {view === 'landing' && (
                 <button
+                  type="button"
                   className="lang-switcher"
                   id="lang-switcher"
                   aria-label="Switch language"
@@ -749,9 +792,11 @@ function App() {
               )}
 
               <button 
+                type="button"
                 className="theme-toggle" 
                 id="theme-toggle" 
-                aria-label="Toggle dark/light theme"
+                aria-label={darkMode ? "Switch to light theme" : "Switch to dark theme"}
+                title={darkMode ? "Switch to light theme" : "Switch to dark theme"}
                 onClick={() => setDarkMode(!darkMode)}
               >
                 <i className="fa-solid fa-moon" aria-hidden="true"></i>
@@ -1478,26 +1523,35 @@ function App() {
               <span>Reception Desk</span>
             </div>
             
-            <div className="portal-sidebar-nav">
+            <div className="portal-sidebar-nav" role="tablist" aria-label="Portal Navigation Tabs">
               <button 
+                type="button"
+                role="tab"
+                aria-selected={portalTab === 'new-booking'}
                 className={`portal-tab-btn ${portalTab === 'new-booking' ? 'active' : ''}`}
                 onClick={() => setPortalTab('new-booking')}
               >
-                <i className="fa-solid fa-calendar-plus"></i>
+                <i className="fa-solid fa-calendar-plus" aria-hidden="true"></i>
                 <span>New Booking</span>
               </button>
               <button 
+                type="button"
+                role="tab"
+                aria-selected={portalTab === 'patients'}
                 className={`portal-tab-btn ${portalTab === 'patients' ? 'active' : ''}`}
                 onClick={() => setPortalTab('patients')}
               >
-                <i className="fa-solid fa-users"></i>
+                <i className="fa-solid fa-users" aria-hidden="true"></i>
                 <span>Patients</span>
               </button>
               <button 
+                type="button"
+                role="tab"
+                aria-selected={portalTab === 'bookings'}
                 className={`portal-tab-btn ${portalTab === 'bookings' ? 'active' : ''}`}
                 onClick={() => setPortalTab('bookings')}
               >
-                <i className="fa-solid fa-file-invoice-dollar"></i>
+                <i className="fa-solid fa-file-invoice-dollar" aria-hidden="true"></i>
                 <span>Invoices</span>
               </button>
             </div>
@@ -1514,14 +1568,6 @@ function App() {
                   </span>
                 </div>
               </div>
-              <button 
-                className="portal-exit-btn-new"
-                title="Exit Portal"
-                onClick={handleLogout}
-              >
-                <i className="fa-solid fa-right-from-bracket"></i>
-                <span>Exit Portal</span>
-              </button>
             </div>
           </aside>
 
@@ -1536,6 +1582,7 @@ function App() {
                       type="button"
                       className="booking-clear-btn"
                       onClick={handleClearBookingForm}
+                      aria-label="Clear all booking and patient fields"
                     >
                       <i className="fa-solid fa-rotate-left"></i>
                       <span>Clear All Fields</span>
@@ -1543,217 +1590,415 @@ function App() {
                   )}
                 </div>
 
-                {/* Step 1: Find/Select Patient */}
+                {/* Step 1: Patient Information */}
                 <div className="portal-card">
-                  <h3 className="portal-card-title">
-                    <i className="fa-solid fa-magnifying-glass"></i> Find Patient
-                  </h3>
-                  <p style={{ marginBottom: '15px', color: 'var(--text-secondary)' }}>
-                    Search by patient name or phone number. If not found, you can register them as a new patient.
-                  </p>
-                  
-                  <div className="search-box-wrapper">
-                    <input 
-                      type="text" 
-                      className="form-control" 
-                      placeholder="Type name or phone number..." 
-                      value={searchQuery}
-                      onChange={handleSearchChange}
-                      style={{ flex: '1', minWidth: 0 }}
-                    />
-                    {searchQuery.trim() && (
+                  <div className="patient-card-header-wrap">
+                    <div>
+                      <h3 className="portal-card-title">
+                        <i className="fa-solid fa-user-injured"></i> Patient Details
+                      </h3>
+                      <p style={{ margin: '4px 0 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                        {isNewPatientForm 
+                          ? 'Register a new walk-in patient. Record will be saved on booking.' 
+                          : selectedPatient 
+                            ? 'Patient verified and selected for this appointment.'
+                            : 'Search existing patients by name or phone, or register a new patient.'}
+                      </p>
+                    </div>
+
+                    {!selectedPatient && !isNewPatientForm && (
                       <button 
+                        ref={registerNewPatientBtnRef}
                         type="button" 
                         className="btn btn-primary"
-                        style={{ minWidth: '130px', padding: '8px 14px', fontSize: '0.82rem', gap: '6px', flexShrink: 0 }}
+                        style={{ padding: '8px 16px', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', flexShrink: 0 }}
                         onClick={triggerNewPatientRegister}
+                        aria-label="Register a new walk-in patient"
                       >
-                        <i className="fa-solid fa-user-plus"></i> Add New Patient
+                        <i className="fa-solid fa-user-plus"></i> Register New Patient
+                      </button>
+                    )}
+
+                    {isNewPatientForm && (
+                      <button 
+                        type="button" 
+                        className="btn" 
+                        style={{ border: '1.5px solid var(--border-color)', padding: '7px 14px', fontSize: '0.84rem', display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', flexShrink: 0, background: 'var(--card-bg)', color: 'var(--text-primary)' }}
+                        onClick={handleCancelNewPatient}
+                        aria-label="Cancel registration and search existing patients"
+                      >
+                        <i className="fa-solid fa-magnifying-glass"></i> Search Existing
                       </button>
                     )}
                   </div>
 
-                  {isSearchingPatient && (
-                    <div style={{ marginTop: '12px', fontSize: '0.88rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <i className="fa-solid fa-spinner fa-spin"></i>
-                      <span>Searching database...</span>
-                    </div>
-                  )}
-
-                  {searchQuery.trim().length === 1 && !selectedPatient && !isNewPatientForm && (
-                    <div style={{ marginTop: '10px', fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <i className="fa-solid fa-circle-info"></i>
-                      <span>Type at least 2 characters to search patients...</span>
-                    </div>
-                  )}
-
-                  {!isSearchingPatient && searchResults.length > 0 && (
-                    <div className="search-results-list">
-                      {searchResults.map(p => (
-                        <div 
-                          key={p.id} 
-                          className="search-result-item"
-                          onClick={() => handleSelectPatient(p)}
-                        >
-                          <div>
-                            <strong>{p.name}</strong> - {p.phone}
-                          </div>
-                          <span style={{ fontSize: '0.85rem', color: 'var(--primary)' }}>
-                            {p.age} Yrs / {p.gender} | Select <i className="fa-solid fa-chevron-right"></i>
-                          </span>
+                  {/* ── STATE 1: Patient Selected ── */}
+                  {selectedPatient && !isNewPatientForm && (
+                    <div className="patient-verified-card">
+                      <div className="patient-verified-left">
+                        <div className="patient-verified-avatar">
+                          <i className="fa-solid fa-check"></i>
                         </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {searchQuery.trim().length >= 2 && !isSearchingPatient && searchResults.length === 0 && !selectedPatient && !isNewPatientForm && (
-                    <div className="portal-alert portal-alert-warning">
-                      <i className="fa-solid fa-triangle-exclamation"></i>
-                      <div>
-                        No matching patients found. 
-                        <button 
-                          className="btn-link" 
-                          style={{ marginLeft: '10px', fontWeight: 'bold', color: 'inherit', textDecoration: 'underline', border: 'none', background: 'none', cursor: 'pointer' }}
-                          onClick={triggerNewPatientRegister}
-                        >
-                          Click here to register "{searchQuery}" as a new patient.
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Display Selected Patient */}
-                  {selectedPatient && (
-                    <div className="selected-patient-card">
-                      <div className="selected-patient-info">
-                        <h4>Selected Patient: {selectedPatient.name}</h4>
-                        <p>
-                          <strong>Phone:</strong> {selectedPatient.phone} | <strong>Age/Gender:</strong> {selectedPatient.age} Yrs / {selectedPatient.gender}
-                        </p>
-                        {selectedPatient.address && <p><strong>Address:</strong> {selectedPatient.address}</p>}
+                        <div className="patient-verified-info">
+                          <div className="patient-verified-name-row">
+                            <h4 className="patient-verified-name">{selectedPatient.name}</h4>
+                            <span className="patient-verified-pill">
+                              <i className="fa-solid fa-shield-halved"></i> Existing Patient
+                            </span>
+                          </div>
+                          <div className="patient-verified-details">
+                            <span><i className="fa-solid fa-phone"></i> {selectedPatient.phone}</span>
+                            <span><i className="fa-solid fa-cake-candles"></i> {selectedPatient.age} Yrs</span>
+                            <span><i className="fa-solid fa-venus-mars"></i> {selectedPatient.gender}</span>
+                            {selectedPatient.address && (
+                              <span><i className="fa-solid fa-location-dot"></i> {selectedPatient.address}</span>
+                            )}
+                          </div>
+                        </div>
                       </div>
                       <button 
-                        className="btn" 
-                        style={{ color: 'red', border: '1.5px solid red', padding: '6px 12px', borderRadius: 'var(--radius-sm)', cursor: 'pointer', background: 'transparent' }}
-                        onClick={() => setSelectedPatient(null)}
+                        ref={changePatientBtnRef}
+                        type="button" 
+                        className="patient-change-btn"
+                        onClick={() => {
+                          setSelectedPatient(null);
+                          setSearchQuery('');
+                          setTimeout(() => patientSearchInputRef.current?.focus(), 60);
+                        }}
+                        title="Search or select a different patient"
+                        aria-label={`Change patient from ${selectedPatient.name}`}
                       >
-                        Remove
+                        <i className="fa-solid fa-arrow-right-arrow-left"></i> Change Patient
                       </button>
+                    </div>
+                  )}
+
+                  {/* ── STATE 2: Search Existing Patient ── */}
+                  {!selectedPatient && !isNewPatientForm && (
+                    <div className="patient-search-area">
+                      <div className="patient-search-bar">
+                        <i className="fa-solid fa-magnifying-glass patient-search-bar-icon" aria-hidden="true"></i>
+                        <input 
+                          ref={patientSearchInputRef}
+                          id="patient-search-input"
+                          type="text" 
+                          placeholder="Type patient name or 10-digit phone number..." 
+                          value={searchQuery}
+                          onChange={handleSearchChange}
+                          autoComplete="off"
+                          aria-label="Search patient by name or 10-digit phone number"
+                          aria-autocomplete="list"
+                          aria-controls={searchResults.length > 0 ? "patient-search-results-box" : undefined}
+                          onKeyDown={(e) => {
+                            if (e.key === 'ArrowDown') {
+                              e.preventDefault();
+                              if (searchResults.length > 0 && patientResultRefs.current[0]) {
+                                patientResultRefs.current[0].focus();
+                              } else if (searchQuery.trim().length >= 2 && registerFromSearchBtnRef.current) {
+                                registerFromSearchBtnRef.current.focus();
+                              }
+                            } else if (e.key === 'Enter') {
+                              if (searchResults.length === 1) {
+                                e.preventDefault();
+                                handleSelectPatient(searchResults[0]);
+                              } else if (searchResults.length === 0 && searchQuery.trim().length >= 2) {
+                                e.preventDefault();
+                                triggerNewPatientRegister();
+                              }
+                            } else if (e.key === 'Escape') {
+                              if (searchQuery) {
+                                e.preventDefault();
+                                setSearchQuery('');
+                                setSearchResults([]);
+                              }
+                            }
+                          }}
+                        />
+                        {searchQuery && (
+                          <button 
+                            type="button" 
+                            className="patient-search-clear-action"
+                            onClick={() => {
+                              setSearchQuery('');
+                              setSearchResults([]);
+                              patientSearchInputRef.current?.focus();
+                            }}
+                            title="Clear search"
+                            aria-label="Clear patient search query"
+                          >
+                            <i className="fa-solid fa-xmark"></i>
+                          </button>
+                        )}
+                      </div>
+
+                      {isSearchingPatient && (
+                        <div style={{ marginTop: '10px', fontSize: '0.85rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px' }} aria-live="polite">
+                          <i className="fa-solid fa-spinner fa-spin"></i>
+                          <span>Searching database...</span>
+                        </div>
+                      )}
+
+                      {/* Matching Results List */}
+                      {!isSearchingPatient && searchResults.length > 0 && (
+                        <div className="patient-search-results-box" id="patient-search-results-box" role="listbox" aria-label="Patient search results">
+                          {searchResults.map((p, idx) => (
+                            <div 
+                              key={p.id} 
+                              ref={el => patientResultRefs.current[idx] = el}
+                              className="patient-result-row"
+                              onClick={() => handleSelectPatient(p)}
+                              role="button"
+                              tabIndex={0}
+                              aria-label={`Select patient ${p.name}, phone ${p.phone}, ${p.age} years, ${p.gender}`}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  handleSelectPatient(p);
+                                } else if (e.key === 'ArrowDown') {
+                                  e.preventDefault();
+                                  if (patientResultRefs.current[idx + 1]) {
+                                    patientResultRefs.current[idx + 1].focus();
+                                  }
+                                } else if (e.key === 'ArrowUp') {
+                                  e.preventDefault();
+                                  if (idx === 0) {
+                                    patientSearchInputRef.current?.focus();
+                                  } else if (patientResultRefs.current[idx - 1]) {
+                                    patientResultRefs.current[idx - 1].focus();
+                                  }
+                                } else if (e.key === 'Escape') {
+                                  e.preventDefault();
+                                  patientSearchInputRef.current?.focus();
+                                }
+                              }}
+                            >
+                              <div className="patient-result-avatar">
+                                <i className="fa-solid fa-user"></i>
+                              </div>
+                              <div className="patient-result-meta">
+                                <div className="patient-result-primary">
+                                  <span className="patient-result-name">{p.name}</span>
+                                  <span className="patient-result-badge">{p.age} Yrs / {p.gender}</span>
+                                </div>
+                                <div className="patient-result-sub">
+                                  <span><i className="fa-solid fa-phone"></i> {p.phone}</span>
+                                  {p.address && (
+                                    <span><i className="fa-solid fa-location-dot"></i> {p.address}</span>
+                                  )}
+                                </div>
+                              </div>
+                              <span className="patient-result-select-cta">
+                                Select <i className="fa-solid fa-chevron-right"></i>
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Not Found card */}
+                      {searchQuery.trim().length >= 2 && !isSearchingPatient && searchResults.length === 0 && (
+                        <div className="patient-not-found-card">
+                          <div className="patient-not-found-msg">
+                            <i className="fa-solid fa-user-slash"></i>
+                            <div>
+                              <h5>No matching patient found for "{searchQuery}"</h5>
+                              <p>Register them as a new walk-in patient in seconds.</p>
+                            </div>
+                          </div>
+                          <button 
+                            ref={registerFromSearchBtnRef}
+                            type="button" 
+                            className="btn btn-primary"
+                            style={{ padding: '6px 14px', fontSize: '0.82rem', whiteSpace: 'nowrap' }}
+                            onClick={triggerNewPatientRegister}
+                            aria-label={`Register new patient for query "${searchQuery}"`}
+                            onKeyDown={(e) => {
+                              if (e.key === 'ArrowUp') {
+                                e.preventDefault();
+                                patientSearchInputRef.current?.focus();
+                              }
+                            }}
+                          >
+                            <i className="fa-solid fa-user-plus"></i> Register "{searchQuery}"
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ── STATE 3: Register New Patient Form ── */}
+                  {isNewPatientForm && (
+                    <div className="patient-new-form-section" style={{ marginTop: '16px' }} role="region" aria-label="New Patient Registration Form">
+                      <div className="form-group-grid">
+                        <div className="form-group">
+                          <label htmlFor="reg-patient-name" className="form-label">
+                            Full Name <span aria-hidden="true" style={{ color: '#ef4444' }}>*</span>
+                            <span className="sr-only">(required)</span>
+                          </label>
+                          <input 
+                            ref={newPatientNameRef}
+                            id="reg-patient-name"
+                            type="text" 
+                            className="form-control" 
+                            placeholder="Patient's Full Name"
+                            value={newPatientDetails.name}
+                            onChange={(e) => setNewPatientDetails({...newPatientDetails, name: e.target.value})}
+                            required
+                            aria-required="true"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                newPatientPhoneRef.current?.focus();
+                              }
+                            }}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label htmlFor="reg-patient-phone" className="form-label">
+                            Phone Number <span aria-hidden="true" style={{ color: '#ef4444' }}>*</span>
+                            <span className="sr-only">(required)</span>
+                          </label>
+                          <input 
+                            ref={newPatientPhoneRef}
+                            id="reg-patient-phone"
+                            type="tel" 
+                            className="form-control" 
+                            placeholder="10-digit Mobile Number"
+                            value={newPatientDetails.phone}
+                            onChange={(e) => setNewPatientDetails({...newPatientDetails, phone: e.target.value})}
+                            required
+                            aria-required="true"
+                            maxLength={10}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                newPatientAgeRef.current?.focus();
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <div className="form-group-grid">
+                        <div className="form-group">
+                          <label htmlFor="reg-patient-age" className="form-label">
+                            Age (Years) <span aria-hidden="true" style={{ color: '#ef4444' }}>*</span>
+                            <span className="sr-only">(required)</span>
+                          </label>
+                          <input 
+                            ref={newPatientAgeRef}
+                            id="reg-patient-age"
+                            type="number" 
+                            min="0"
+                            max="130"
+                            className="form-control" 
+                            placeholder="e.g. 28"
+                            value={newPatientDetails.age}
+                            onChange={(e) => setNewPatientDetails({...newPatientDetails, age: e.target.value})}
+                            required
+                            aria-required="true"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                newPatientGenderRef.current?.focus();
+                              }
+                            }}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label htmlFor="reg-patient-gender" className="form-label">
+                            Gender <span aria-hidden="true" style={{ color: '#ef4444' }}>*</span>
+                            <span className="sr-only">(required)</span>
+                          </label>
+                          <select 
+                            ref={newPatientGenderRef}
+                            id="reg-patient-gender"
+                            className="form-control"
+                            value={newPatientDetails.gender}
+                            onChange={(e) => setNewPatientDetails({...newPatientDetails, gender: e.target.value})}
+                            required
+                            aria-required="true"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                newPatientAddressRef.current?.focus();
+                              }
+                            }}
+                          >
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="reg-patient-address" className="form-label">Address</label>
+                        <input 
+                          ref={newPatientAddressRef}
+                          id="reg-patient-address"
+                          type="text" 
+                          className="form-control" 
+                          placeholder="Patient's Residential Address"
+                          value={newPatientDetails.address}
+                          onChange={(e) => setNewPatientDetails({...newPatientDetails, address: e.target.value})}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              serviceMultiSelectRef.current?.focusTrigger();
+                            }
+                          }}
+                        />
+                      </div>
+
+                      {/* Duplicate patient detection warning */}
+                      {(() => {
+                        const trimmedName = (newPatientDetails.name || '').trim().toLowerCase();
+                        const trimmedPhone = (newPatientDetails.phone || '').trim();
+                        if (trimmedName && trimmedPhone) {
+                          const duplicate = patientsList.find(p =>
+                            p.name && p.phone &&
+                            p.name.trim().toLowerCase() === trimmedName &&
+                            p.phone.trim() === trimmedPhone
+                          );
+                          if (duplicate) {
+                            return (
+                              <div role="alert" aria-live="assertive" className="portal-alert portal-alert-warning" style={{ marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <i className="fa-solid fa-triangle-exclamation"></i>
+                                  <span>Patient <strong>{duplicate.name}</strong> ({duplicate.phone}) is already registered ({duplicate.age} Yrs / {duplicate.gender}).</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  className="btn btn-primary"
+                                  style={{ padding: '5px 12px', fontSize: '0.82rem', whiteSpace: 'nowrap', flexShrink: 0 }}
+                                  onClick={() => handleSelectPatient(duplicate)}
+                                  aria-label={`Select existing patient ${duplicate.name}`}
+                                >
+                                  <i className="fa-solid fa-check"></i> Select Existing Patient
+                                </button>
+                              </div>
+                            );
+                          }
+                        }
+                        return null;
+                      })()}
+
+                      <div style={{ marginTop: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <button 
+                          type="button" 
+                          className="btn" 
+                          style={{ color: 'var(--text-secondary)', border: '1px solid var(--border-color)', padding: '8px 16px', borderRadius: 'var(--radius-sm)', cursor: 'pointer', background: 'transparent' }}
+                          onClick={handleCancelNewPatient}
+                          aria-label="Cancel registration and return to search"
+                        >
+                          Cancel
+                        </button>
+                        <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                          * Details will be saved on booking. Press Tab or Enter to proceed to services.
+                        </span>
+                      </div>
                     </div>
                   )}
                 </div>
-
-                {/* Step 2: Register New Patient Form */}
-                {isNewPatientForm && (
-                  <div className="portal-card" style={{ borderLeft: '4px solid var(--primary)' }}>
-                    <h3 className="portal-card-title">
-                      <i className="fa-solid fa-user-plus"></i> Register New Patient
-                    </h3>
-                    <div className="form-group-grid">
-                      <div className="form-group">
-                        <label className="form-label">Full Name *</label>
-                        <input 
-                          type="text" 
-                          className="form-control" 
-                          placeholder="Patient's Full Name"
-                          value={newPatientDetails.name}
-                          onChange={(e) => setNewPatientDetails({...newPatientDetails, name: e.target.value})}
-                          required
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label className="form-label">Phone Number *</label>
-                        <input 
-                          type="tel" 
-                          className="form-control" 
-                          placeholder="10-digit Mobile Number"
-                          value={newPatientDetails.phone}
-                          onChange={(e) => setNewPatientDetails({...newPatientDetails, phone: e.target.value})}
-                          required
-                        />
-                      </div>
-                    </div>
-                    <div className="form-group-grid">
-                      <div className="form-group">
-                        <label className="form-label">Age (Years) *</label>
-                        <input 
-                          type="number" 
-                          className="form-control" 
-                          placeholder="e.g. 28"
-                          value={newPatientDetails.age}
-                          onChange={(e) => setNewPatientDetails({...newPatientDetails, age: e.target.value})}
-                          required
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label className="form-label">Gender *</label>
-                        <select 
-                          className="form-control"
-                          value={newPatientDetails.gender}
-                          onChange={(e) => setNewPatientDetails({...newPatientDetails, gender: e.target.value})}
-                        >
-                          <option value="Male">Male</option>
-                          <option value="Female">Female</option>
-                          <option value="Other">Other</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Address</label>
-                      <input 
-                        type="text" 
-                        className="form-control" 
-                        placeholder="Patient's Residential Address"
-                        value={newPatientDetails.address}
-                        onChange={(e) => setNewPatientDetails({...newPatientDetails, address: e.target.value})}
-                      />
-                    </div>
-                    {/* Duplicate patient detection warning */}
-                    {(() => {
-                      const trimmedName = (newPatientDetails.name || '').trim().toLowerCase();
-                      const trimmedPhone = (newPatientDetails.phone || '').trim();
-                      if (trimmedName && trimmedPhone) {
-                        const duplicate = patientsList.find(p =>
-                          p.name && p.phone &&
-                          p.name.trim().toLowerCase() === trimmedName &&
-                          p.phone.trim() === trimmedPhone
-                        );
-                        if (duplicate) {
-                          return (
-                            <div className="portal-alert portal-alert-warning" style={{ marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <i className="fa-solid fa-triangle-exclamation"></i>
-                                <span>Patient <strong>{duplicate.name}</strong> ({duplicate.phone}) is already registered ({duplicate.age} Yrs / {duplicate.gender}).</span>
-                              </div>
-                              <button
-                                type="button"
-                                className="btn btn-primary"
-                                style={{ padding: '5px 12px', fontSize: '0.82rem', whiteSpace: 'nowrap', flexShrink: 0 }}
-                                onClick={() => handleSelectPatient(duplicate)}
-                              >
-                                <i className="fa-solid fa-check"></i> Select Existing Patient
-                              </button>
-                            </div>
-                          );
-                        }
-                      }
-                      return null;
-                    })()}
-                    <div style={{ marginTop: '15px' }}>
-                      <button 
-                        type="button" 
-                        className="btn" 
-                        style={{ color: 'var(--text-secondary)', border: '1px solid var(--border-color)', padding: '8px 16px', borderRadius: 'var(--radius-sm)', marginRight: '10px', cursor: 'pointer', background: 'transparent' }}
-                        onClick={() => setIsNewPatientForm(false)}
-                      >
-                        Cancel
-                      </button>
-                      <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                        * Details will be saved on booking.
-                      </span>
-                    </div>
-                  </div>
-                )}
 
                 {/* Step 3: Select Services / Tests */}
                 <div className="portal-card">
@@ -1765,6 +2010,7 @@ function App() {
                   </p>
                   
                   <ServiceMultiSelect
+                    ref={serviceMultiSelectRef}
                     catalogServices={catalogServices}
                     selectedServices={selectedServices}
                     onToggleService={handleToggleService}
@@ -1780,18 +2026,26 @@ function App() {
                   </h3>
                   <div className="form-group-grid">
                     <div className="form-group">
-                      <label className="form-label">Referred By</label>
+                      <label htmlFor="booking-referred-by" className="form-label">Referred By</label>
                       <input 
+                        id="booking-referred-by"
                         type="text" 
                         className="form-control" 
                         placeholder="Referred Doctor's Name (e.g. Dr. A. Choudhury)" 
                         value={referredBy}
                         onChange={(e) => setReferredBy(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            document.getElementById('booking-payment-mode')?.focus();
+                          }
+                        }}
                       />
                     </div>
                     <div className="form-group">
-                      <label className="form-label">Payment Mode</label>
+                      <label htmlFor="booking-payment-mode" className="form-label">Payment Mode</label>
                       <select 
+                        id="booking-payment-mode"
                         className="form-control"
                         value={paymentMode}
                         onChange={(e) => setPaymentMode(e.target.value)}
@@ -1849,14 +2103,18 @@ function App() {
                           type="button"
                           className="booking-clear-btn"
                           onClick={handleClearBookingForm}
+                          aria-label="Clear all booking fields"
                         >
                           <i className="fa-solid fa-rotate-left"></i>
                           <span>Clear All</span>
                         </button>
                         <button 
+                          type="button"
                           onClick={handleSaveBooking}
                           className="booking-submit-btn"
                           disabled={isSavingBooking}
+                          aria-disabled={isSavingBooking}
+                          aria-label="Complete booking and generate invoice"
                           style={isSavingBooking ? { opacity: 0.7, cursor: 'not-allowed' } : {}}
                         >
                           <i className={isSavingBooking ? "fa-solid fa-spinner fa-spin" : "fa-solid fa-receipt"}></i>
@@ -4535,7 +4793,19 @@ function App() {
 
       {/* Empty Amount Alert Pop-up Modal */}
       {emptyPriceAlert && (
-        <div className="invoice-modal-overlay" style={{ zIndex: 99999 }} onClick={() => setEmptyPriceAlert(null)}>
+        <div 
+          className="invoice-modal-overlay" 
+          style={{ zIndex: 99999 }} 
+          onClick={() => setEmptyPriceAlert(null)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setEmptyPriceAlert(null);
+            }
+          }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="price-alert-title"
+        >
           <div className="price-alert-modal-card" onClick={e => e.stopPropagation()}>
             <div className="price-alert-modal-header">
               <div className="price-alert-header-left">
@@ -4543,7 +4813,7 @@ function App() {
                   <i className="fa-solid fa-receipt"></i>
                 </div>
                 <div className="price-alert-title-wrap">
-                  <h3>Price Required</h3>
+                  <h3 id="price-alert-title">Price Required</h3>
                   <p>Enter service amount to generate invoice</p>
                 </div>
               </div>
@@ -4551,7 +4821,7 @@ function App() {
                 type="button"
                 onClick={() => setEmptyPriceAlert(null)}
                 className="price-alert-close-btn"
-                aria-label="Close"
+                aria-label="Close price required modal"
               >
                 <i className="fa-solid fa-xmark"></i>
               </button>

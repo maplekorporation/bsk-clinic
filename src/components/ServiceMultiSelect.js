@@ -1,17 +1,38 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useImperativeHandle, forwardRef } from 'react';
 
-const ServiceMultiSelect = ({
+const isVariablePriceService = (srv) => {
+  if (!srv) return false;
+  return Boolean(
+    srv.isVariablePrice ||
+    srv.category === 'Hearing Aid Services' ||
+    srv.category === 'Consultation' ||
+    (srv.name && (srv.name.toLowerCase().includes('hearing aid') || srv.name.toLowerCase().includes('consultan')))
+  );
+};
+
+const ServiceMultiSelect = forwardRef(({
   catalogServices = [],
   selectedServices = [],
   onToggleService,
   onPriceChange,
   onClearAll,
-}) => {
+}, ref) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const dropdownRef = useRef(null);
   const searchInputRef = useRef(null);
+  const triggerRef = useRef(null);
+  const categoryChipRefs = useRef([]);
+  const serviceOptionRefs = useRef([]);
+  const doneBtnRef = useRef(null);
+
+  // Expose focusTrigger method via ref
+  useImperativeHandle(ref, () => ({
+    focusTrigger: () => {
+      triggerRef.current?.focus();
+    }
+  }));
 
   // Extract unique categories from catalog
   const categories = ['ALL', ...Array.from(new Set(catalogServices.map(s => s.category).filter(Boolean)))];
@@ -38,7 +59,7 @@ const ServiceMultiSelect = ({
     if (isOpen && searchInputRef.current) {
       const timer = setTimeout(() => {
         searchInputRef.current?.focus();
-      }, 100);
+      }, 80);
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
@@ -88,34 +109,35 @@ const ServiceMultiSelect = ({
 
   return (
     <div className="service-multiselect-wrapper" ref={dropdownRef}>
-      {/* ── 1. DROPDOWN TRIGGER / SEARCH INPUT ── */}
+      {/* ── 1. MAIN SELECT / SEARCH TRIGGER ── */}
       <div className="service-multiselect-control-group">
-        <label className="service-multiselect-label">
-          <i className="fa-solid fa-briefcase-medical"></i> Select Diagnostics & Services
-        </label>
-
         <div
+          ref={triggerRef}
           className={`service-multiselect-trigger ${isOpen ? 'active' : ''} ${selectedServices.length > 0 ? 'has-selection' : ''}`}
           onClick={() => setIsOpen(!isOpen)}
-          role="button"
+          role="combobox"
           tabIndex={0}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
+            if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
               e.preventDefault();
-              setIsOpen(!isOpen);
+              setIsOpen(true);
+            } else if (e.key === 'Escape' && isOpen) {
+              e.preventDefault();
+              setIsOpen(false);
             }
           }}
           aria-haspopup="listbox"
           aria-expanded={isOpen}
+          aria-label="Select diagnostic tests and services"
         >
           <div className="service-trigger-left">
             <span className="service-trigger-icon">
-              <i className="fa-solid fa-layer-group"></i>
+              <i className="fa-solid fa-magnifying-glass"></i>
             </span>
             <div className="service-trigger-text">
               {selectedServices.length === 0 ? (
                 <span className="service-trigger-placeholder">
-                  Click to select diagnostic tests & services...
+                  Search or click to select diagnostic tests & services...
                 </span>
               ) : (
                 <div className="service-trigger-selected-wrap">
@@ -161,10 +183,25 @@ const ServiceMultiSelect = ({
                   ref={searchInputRef}
                   type="text"
                   className="service-dropdown-search-input"
-                  placeholder="Search by service name or category..."
+                  placeholder="Type to search test or service name..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onClick={(e) => e.stopPropagation()}
+                  aria-label="Search tests and services"
+                  onKeyDown={(e) => {
+                    if (e.key === 'ArrowDown') {
+                      e.preventDefault();
+                      if (categories.length > 1 && categoryChipRefs.current[0]) {
+                        categoryChipRefs.current[0].focus();
+                      } else if (serviceOptionRefs.current[0]) {
+                        serviceOptionRefs.current[0].focus();
+                      }
+                    } else if (e.key === 'Escape') {
+                      e.preventDefault();
+                      setIsOpen(false);
+                      triggerRef.current?.focus();
+                    }
+                  }}
                 />
                 {searchQuery && (
                   <button
@@ -175,6 +212,8 @@ const ServiceMultiSelect = ({
                       setSearchQuery('');
                       searchInputRef.current?.focus();
                     }}
+                    title="Clear search"
+                    aria-label="Clear service search query"
                   >
                     <i className="fa-solid fa-xmark"></i>
                   </button>
@@ -183,24 +222,44 @@ const ServiceMultiSelect = ({
             </div>
 
             {/* Category Filter Chips */}
-            <div className="service-category-chips-bar" onClick={(e) => e.stopPropagation()}>
-              {categories.map(cat => (
-                <button
-                  key={cat}
-                  type="button"
-                  className={`service-cat-chip ${selectedCategory === cat ? 'active' : ''}`}
-                  onClick={() => setSelectedCategory(cat)}
-                >
-                  <span>{cat === 'ALL' ? 'All Services' : cat}</span>
-                  <span className="cat-chip-count">{getCategoryCount(cat)}</span>
-                </button>
-              ))}
-            </div>
+            {categories.length > 1 && (
+              <div className="service-category-chips-bar" onClick={(e) => e.stopPropagation()} role="toolbar" aria-label="Service Category Filters">
+                {categories.map((cat, catIdx) => (
+                  <button
+                    key={cat}
+                    ref={el => categoryChipRefs.current[catIdx] = el}
+                    type="button"
+                    className={`service-cat-chip ${selectedCategory === cat ? 'active' : ''}`}
+                    onClick={() => setSelectedCategory(cat)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'ArrowRight' && categoryChipRefs.current[catIdx + 1]) {
+                        e.preventDefault();
+                        categoryChipRefs.current[catIdx + 1].focus();
+                      } else if (e.key === 'ArrowLeft' && categoryChipRefs.current[catIdx - 1]) {
+                        e.preventDefault();
+                        categoryChipRefs.current[catIdx - 1].focus();
+                      } else if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        serviceOptionRefs.current[0]?.focus();
+                      } else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        setIsOpen(false);
+                        triggerRef.current?.focus();
+                      }
+                    }}
+                    aria-pressed={selectedCategory === cat}
+                  >
+                    <span>{cat === 'ALL' ? 'All Services' : cat}</span>
+                    <span className="cat-chip-count">{getCategoryCount(cat)}</span>
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Selection Quick Actions */}
             <div className="service-dropdown-actions-bar" onClick={(e) => e.stopPropagation()}>
               <span className="service-count-status">
-                {filteredServices.length} {filteredServices.length === 1 ? 'service' : 'services'}
+                {filteredServices.length} {filteredServices.length === 1 ? 'service available' : 'services available'}
               </span>
               <div className="service-quick-btn-group">
                 {filteredServices.length > 0 && (
@@ -208,6 +267,16 @@ const ServiceMultiSelect = ({
                     type="button"
                     className="service-quick-btn"
                     onClick={handleToggleAllFiltered}
+                    onKeyDown={(e) => {
+                      if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        serviceOptionRefs.current[0]?.focus();
+                      } else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        setIsOpen(false);
+                        triggerRef.current?.focus();
+                      }
+                    }}
                   >
                     {isAllFilteredSelected ? (
                       <>
@@ -224,32 +293,65 @@ const ServiceMultiSelect = ({
             </div>
 
             {/* Options List */}
-            <div className="service-options-list" role="listbox">
+            <div className="service-options-list" role="listbox" id="service-options-list" aria-label="Available services">
               {filteredServices.length === 0 ? (
                 <div className="service-no-results">
                   <i className="fa-solid fa-search"></i>
-                  <p>No services matching "<strong>{searchQuery}</strong>"</p>
+                  <p>No services found matching "<strong>{searchQuery}</strong>"</p>
                   <button
                     type="button"
                     className="btn-link-reset"
                     onClick={() => {
                       setSearchQuery('');
                       setSelectedCategory('ALL');
+                      searchInputRef.current?.focus();
                     }}
                   >
                     Reset filters
                   </button>
                 </div>
               ) : (
-                filteredServices.map(srv => {
+                filteredServices.map((srv, idx) => {
                   const isSelected = selectedServices.some(s => s.id === srv.id);
+                  const isVariable = isVariablePriceService(srv);
+
                   return (
                     <div
                       key={srv.id}
+                      ref={el => serviceOptionRefs.current[idx] = el}
                       className={`service-option-item ${isSelected ? 'selected' : ''}`}
                       onClick={() => onToggleService(srv)}
                       role="option"
                       aria-selected={isSelected}
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          onToggleService(srv);
+                        } else if (e.key === 'ArrowDown') {
+                          e.preventDefault();
+                          if (serviceOptionRefs.current[idx + 1]) {
+                            serviceOptionRefs.current[idx + 1].focus();
+                          } else if (doneBtnRef.current) {
+                            doneBtnRef.current.focus();
+                          }
+                        } else if (e.key === 'ArrowUp') {
+                          e.preventDefault();
+                          if (idx === 0) {
+                            if (categories.length > 1 && categoryChipRefs.current[0]) {
+                              categoryChipRefs.current[0].focus();
+                            } else {
+                              searchInputRef.current?.focus();
+                            }
+                          } else if (serviceOptionRefs.current[idx - 1]) {
+                            serviceOptionRefs.current[idx - 1].focus();
+                          }
+                        } else if (e.key === 'Escape') {
+                          e.preventDefault();
+                          setIsOpen(false);
+                          triggerRef.current?.focus();
+                        }
+                      }}
                     >
                       <div className="service-option-checkbox-wrapper">
                         <div className={`custom-checkbox ${isSelected ? 'checked' : ''}`}>
@@ -258,10 +360,22 @@ const ServiceMultiSelect = ({
                       </div>
 
                       <div className="service-option-details">
-                        <span className="service-option-name">{srv.name}</span>
-                        {srv.category && (
-                          <span className="service-option-cat-tag">{srv.category}</span>
-                        )}
+                        <div className="service-option-main-info">
+                          <span className="service-option-name">{srv.name}</span>
+                          {srv.category && (
+                            <span className="service-option-cat-tag">{srv.category}</span>
+                          )}
+                        </div>
+
+                        <div className="service-option-pricing">
+                          {isVariable ? (
+                            <span className="service-option-variable-badge">Custom Price</span>
+                          ) : (
+                            <span className="service-option-price-tag">
+                              ₹{Number(srv.price || 0).toLocaleString('en-IN')}{srv.perSession ? '/session' : ''}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
@@ -275,9 +389,27 @@ const ServiceMultiSelect = ({
                 <strong>{selectedServices.length}</strong> selected
               </div>
               <button
+                ref={doneBtnRef}
                 type="button"
                 className="btn btn-primary service-dropdown-done-btn"
-                onClick={() => setIsOpen(false)}
+                onClick={() => {
+                  setIsOpen(false);
+                  triggerRef.current?.focus();
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    const lastIdx = filteredServices.length - 1;
+                    if (lastIdx >= 0 && serviceOptionRefs.current[lastIdx]) {
+                      serviceOptionRefs.current[lastIdx].focus();
+                    }
+                  } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    setIsOpen(false);
+                    triggerRef.current?.focus();
+                  }
+                }}
+                aria-label="Confirm selected services and close dropdown"
               >
                 <i className="fa-solid fa-check"></i> Done
               </button>
@@ -286,19 +418,19 @@ const ServiceMultiSelect = ({
         )}
       </div>
 
-      {/* ── 3. BOTTOM SELECTED SERVICES WITH NAME & NON-EDITABLE PRICES ── */}
-      <div className="selected-services-bottom-panel">
-        <div className="selected-services-header">
-          <div className="selected-services-title-wrap">
-            <h4 className="selected-services-title">
-              <i className="fa-solid fa-clipboard-check"></i> Selected Services
-            </h4>
-            <span className="selected-badge-counter">
-              {selectedServices.length} {selectedServices.length === 1 ? 'item' : 'items'}
-            </span>
-          </div>
+      {/* ── 3. SELECTED SERVICES LIST (ONLY SHOWN WHEN ITEMS ARE SELECTED) ── */}
+      {selectedServices.length > 0 && (
+        <div className="selected-services-bottom-panel">
+          <div className="selected-services-header">
+            <div className="selected-services-title-wrap">
+              <h4 className="selected-services-title">
+                <i className="fa-solid fa-clipboard-check"></i> Selected Services
+              </h4>
+              <span className="selected-badge-counter">
+                {selectedServices.length} {selectedServices.length === 1 ? 'service' : 'services'}
+              </span>
+            </div>
 
-          {selectedServices.length > 0 && (
             <button
               type="button"
               className="selected-services-clear-action"
@@ -306,36 +438,19 @@ const ServiceMultiSelect = ({
             >
               <i className="fa-regular fa-trash-can"></i> Clear All
             </button>
-          )}
-        </div>
-
-        {selectedServices.length === 0 ? (
-          <div
-            className="selected-services-empty-state"
-            onClick={() => setIsOpen(true)}
-            role="button"
-            tabIndex={0}
-          >
-            <div className="empty-state-icon">
-              <i className="fa-solid fa-notes-medical"></i>
-            </div>
-            <div className="empty-state-text">
-              <h5>No Services Selected</h5>
-              <p>Click the dropdown above to search and select required diagnostic tests or therapy sessions.</p>
-            </div>
-            <button type="button" className="empty-state-cta-btn">
-              <i className="fa-solid fa-plus"></i> Select Services
-            </button>
           </div>
-        ) : (
+
           <div className="selected-services-list">
             <div className="selected-services-order-list">
               {selectedServices.map((srv, idx) => {
-                const isVariable = srv.isVariablePrice || srv.category === 'Hearing Aid Services' || srv.category === 'Consultation' || (srv.name && (srv.name.toLowerCase().includes('hearing aid') || srv.name.toLowerCase().includes('consultan')));
+                const isVariable = isVariablePriceService(srv);
                 const isPriceEmpty = isVariable && (!srv.customPrice || Number(srv.customPrice) <= 0);
 
                 return (
-                  <div key={srv.id} className={`selected-service-row ${isVariable ? 'is-variable-row' : ''} ${isPriceEmpty ? 'row-has-error' : ''}`}>
+                  <div
+                    key={srv.id}
+                    className={`selected-service-row ${isVariable ? 'is-variable-row' : ''} ${isPriceEmpty ? 'row-has-error' : ''}`}
+                  >
                     {/* Index & Service Info */}
                     <div className="service-row-left">
                       <span className="service-row-index">{idx + 1}</span>
@@ -356,7 +471,7 @@ const ServiceMultiSelect = ({
                     <div className="service-row-right">
                       {isVariable ? (
                         <div className="service-row-price-input-group">
-                          <div 
+                          <div
                             className={`service-row-input-wrap ${isPriceEmpty ? 'has-error' : ''}`}
                             onClick={(e) => {
                               const input = e.currentTarget.querySelector('input');
@@ -387,7 +502,7 @@ const ServiceMultiSelect = ({
                         </div>
                       ) : (
                         <div className="service-row-price-tag">
-                          ₹{Number(srv.price).toLocaleString('en-IN')}{srv.perSession ? '/session' : ''}
+                          ₹{Number(srv.price || 0).toLocaleString('en-IN')}{srv.perSession ? '/session' : ''}
                         </div>
                       )}
 
@@ -398,7 +513,7 @@ const ServiceMultiSelect = ({
                         title={`Remove ${srv.name}`}
                         aria-label={`Remove ${srv.name}`}
                       >
-                        <i className="fa-solid fa-trash-can"></i>
+                        <i className="fa-solid fa-xmark"></i>
                       </button>
                     </div>
                   </div>
@@ -417,10 +532,10 @@ const ServiceMultiSelect = ({
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
-};
+});
 
 export default ServiceMultiSelect;

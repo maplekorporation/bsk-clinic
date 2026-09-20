@@ -5100,60 +5100,322 @@ body.dark-mode .portal-header-logout-btn:hover {
     box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15);
 }
 
-/* Patient Search Panel */
-.search-box-wrapper {
+/* ==========================================================================
+   Unified Patient Details & Search Panel
+   ========================================================================== */
+.patient-card-header-wrap {
     display: flex;
-    gap: 12px;
-    margin-bottom: 20px;
-}
-
-.search-results-list {
-    margin-top: 10px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-sm);
-    max-height: 200px;
-    overflow-y: auto;
-    background: var(--card-bg);
-}
-
-.search-result-item {
-    padding: 12px 16px;
-    cursor: pointer;
-    border-bottom: 1px solid var(--border-color);
-    transition: var(--transition-fast);
-    display: flex;
+    align-items: flex-start;
     justify-content: space-between;
-    align-items: center;
+    gap: 16px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
 }
 
-.search-result-item:last-child {
+.patient-search-area {
+    width: 100%;
+    margin-top: 10px;
+}
+
+.patient-search-bar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: var(--card-bg);
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 0 14px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    min-height: 48px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+}
+
+.patient-search-bar:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.12);
+}
+
+.patient-search-bar-icon {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.patient-search-bar input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 0.92rem;
+    color: var(--text-primary);
+    padding: 11px 0;
+    font-family: inherit;
+}
+
+.patient-search-bar input::placeholder {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.patient-search-clear-action {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.15s ease;
+}
+
+.patient-search-clear-action:hover {
+    color: var(--text-primary);
+    background: rgba(0, 0, 0, 0.06);
+}
+
+/* Patient Search Results Box */
+.patient-search-results-box {
+    margin-top: 10px;
+    background: var(--card-bg);
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+.patient-result-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: all 0.18s ease;
+    gap: 12px;
+}
+
+.patient-result-row:last-child {
     border-bottom: none;
 }
 
-.search-result-item:hover {
+.patient-result-row:hover {
     background: rgba(var(--primary-rgb), 0.05);
 }
 
-.selected-patient-card {
-    background: rgba(var(--primary-rgb), 0.03);
-    border: 1.5px dashed var(--primary);
-    border-radius: var(--radius-sm);
-    padding: 20px;
-    margin-top: 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.selected-patient-info h4 {
-    font-family: var(--font-heading);
-    font-size: 1.1rem;
+.patient-result-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(var(--primary-rgb), 0.08);
     color: var(--primary);
-    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    flex-shrink: 0;
 }
 
-.selected-patient-info p {
-    font-size: 0.9rem;
+.patient-result-meta {
+    flex: 1;
+    min-width: 0;
+}
+
+.patient-result-primary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.patient-result-name {
+    font-weight: 600;
+    font-size: 0.94rem;
+    color: var(--text-primary);
+}
+
+.patient-result-badge {
+    font-size: 0.72rem;
+    padding: 1px 7px;
+    border-radius: 6px;
+    background: rgba(var(--primary-rgb), 0.08);
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.patient-result-sub {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 3px;
+    flex-wrap: wrap;
+}
+
+.patient-result-sub span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.patient-result-select-cta {
+    font-size: 0.82rem;
+    color: var(--primary);
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+/* Verified Selected Patient Card */
+.patient-verified-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    background: linear-gradient(135deg, rgba(var(--secondary-rgb), 0.06), rgba(var(--primary-rgb), 0.02));
+    border: 1.5px solid rgba(var(--secondary-rgb), 0.35);
+    border-radius: var(--radius-md);
+    gap: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+    margin-top: 6px;
+}
+
+.patient-verified-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+    flex: 1;
+}
+
+.patient-verified-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--secondary);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(var(--secondary-rgb), 0.28);
+}
+
+.patient-verified-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.patient-verified-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+}
+
+.patient-verified-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.patient-verified-pill {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--secondary);
+    background: rgba(var(--secondary-rgb), 0.12);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.patient-verified-details {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    font-size: 0.84rem;
+    color: var(--text-secondary);
+}
+
+.patient-verified-details span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.patient-change-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border: 1.2px solid var(--border-color);
+    background: var(--card-bg);
+    color: var(--text-primary);
+    font-size: 0.82rem;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.patient-change-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: rgba(var(--primary-rgb), 0.04);
+}
+
+/* Not Found Card */
+.patient-not-found-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    background: rgba(var(--primary-rgb), 0.025);
+    border: 1.5px dashed var(--border-color);
+    border-radius: var(--radius-md);
+    margin-top: 12px;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.patient-not-found-msg {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.patient-not-found-msg i {
+    font-size: 1.3rem;
+    color: var(--text-secondary);
+    opacity: 0.7;
+}
+
+.patient-not-found-msg h5 {
+    margin: 0;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.patient-not-found-msg p {
+    margin: 2px 0 0 0;
+    font-size: 0.82rem;
     color: var(--text-secondary);
 }
 
@@ -5581,7 +5843,16 @@ body.dark-mode .portal-header-logout-btn:hover {
     justify-content: space-between;
     flex: 1;
     min-width: 0;
+    gap: 12px;
+}
+
+.service-option-main-info {
+    display: flex;
+    align-items: center;
     gap: 8px;
+    min-width: 0;
+    flex: 1;
+    flex-wrap: wrap;
 }
 
 .service-option-name {
@@ -5597,7 +5868,7 @@ body.dark-mode .portal-header-logout-btn:hover {
 }
 
 .service-option-cat-tag {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     padding: 2px 7px;
     border-radius: var(--radius-full);
     background: rgba(var(--primary-rgb), 0.08);
@@ -5605,6 +5876,30 @@ body.dark-mode .portal-header-logout-btn:hover {
     white-space: nowrap;
     font-weight: 500;
     flex-shrink: 0;
+}
+
+.service-option-pricing {
+    flex-shrink: 0;
+}
+
+.service-option-price-tag {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--secondary);
+    background: rgba(var(--secondary-rgb), 0.08);
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.service-option-variable-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--primary);
+    background: rgba(var(--primary-rgb), 0.08);
+    padding: 2px 7px;
+    border-radius: 4px;
+    white-space: nowrap;
 }
 
 .service-no-results {
@@ -12374,4 +12669,188 @@ body.dark-mode .price-alert-cancel-btn {
 body.dark-mode .price-alert-cancel-btn:hover {
   background: #334155;
   color: #ffffff;
+}
+
+/* ==========================================================================
+   Accessibility & Keyboard Navigation Enhancements (Registration & Booking Flow)
+   ========================================================================== */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Focused Patient Search Result Row */
+.patient-result-row:focus,
+.patient-result-row:focus-visible {
+  background: rgba(var(--primary-rgb), 0.1) !important;
+  outline: 2.5px solid var(--primary) !important;
+  outline-offset: -2px;
+}
+
+/* Service MultiSelect Trigger Focus */
+.service-multiselect-trigger:focus,
+.service-multiselect-trigger:focus-visible {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3.5px rgba(var(--primary-rgb), 0.25) !important;
+  outline: none !important;
+}
+
+/* Service Category Chips Focus */
+.service-cat-chip:focus,
+.service-cat-chip:focus-visible {
+  outline: 2.5px solid var(--primary) !important;
+  outline-offset: 1px;
+  border-color: var(--primary) !important;
+  color: var(--primary) !important;
+}
+
+/* Service Quick Button Focus */
+.service-quick-btn:focus,
+.service-quick-btn:focus-visible {
+  outline: 2px solid var(--primary) !important;
+  outline-offset: 1px;
+}
+
+/* Service Options List Items Focus */
+.service-option-item:focus,
+.service-option-item:focus-visible {
+  background: rgba(var(--primary-rgb), 0.12) !important;
+  outline: 2.5px solid var(--primary) !important;
+  outline-offset: -2px;
+}
+
+/* Done Button Focus */
+.service-dropdown-done-btn:focus,
+.service-dropdown-done-btn:focus-visible {
+  outline: 3px solid var(--primary) !important;
+  outline-offset: 2px;
+}
+
+/* Clear Buttons Focus */
+.patient-search-clear-action:focus,
+.patient-search-clear-action:focus-visible,
+.service-search-clear:focus,
+.service-search-clear:focus-visible,
+.service-trigger-clear-btn:focus,
+.service-trigger-clear-btn:focus-visible {
+  outline: 2px solid var(--primary) !important;
+  outline-offset: 1px;
+}
+
+/* Patient Change Button Focus */
+.patient-change-btn:focus,
+.patient-change-btn:focus-visible {
+  outline: 2.5px solid var(--primary) !important;
+  outline-offset: 2px;
+}
+
+/* Booking Clear & Submit Buttons Focus */
+.booking-clear-btn:focus,
+.booking-clear-btn:focus-visible {
+  outline: 2.5px solid var(--primary) !important;
+  outline-offset: 2px;
+}
+
+.booking-submit-btn:focus,
+.booking-submit-btn:focus-visible {
+  outline: 3px solid var(--secondary) !important;
+  outline-offset: 2px;
+}
+
+/* Selected Service Row Action Focus */
+.service-row-remove-btn:focus,
+.service-row-remove-btn:focus-visible {
+  outline: 2px solid #ef4444 !important;
+  outline-offset: 1px;
+}
+
+.service-row-price-input:focus,
+.service-row-price-input:focus-visible {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.2) !important;
+}
+
+/* Form Controls Focus Visible */
+.form-control:focus-visible {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.2) !important;
+  outline: none !important;
+}
+
+/* ── Top Header & Navigation Focus Styles ── */
+.logo:focus-visible {
+  outline: 2.5px solid var(--primary) !important;
+  outline-offset: 4px !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+.portal-header-logout-btn:focus-visible,
+.admin-header-logout:focus-visible {
+  outline: 2.5px solid var(--primary) !important;
+  outline-offset: 2px !important;
+  background-color: rgba(var(--primary-rgb), 0.16) !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3.5px rgba(var(--primary-rgb), 0.25) !important;
+}
+
+body.dark-mode .portal-header-logout-btn:focus-visible,
+body.dark-mode .admin-header-logout:focus-visible {
+  outline: 2.5px solid #38bdf8 !important;
+  outline-offset: 2px !important;
+  background-color: rgba(56, 189, 248, 0.25) !important;
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 3.5px rgba(56, 189, 248, 0.3) !important;
+}
+
+.theme-toggle:focus-visible {
+  outline: 2.5px solid var(--primary) !important;
+  outline-offset: 2px !important;
+  background-color: rgba(var(--primary-rgb), 0.18) !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3.5px rgba(var(--primary-rgb), 0.25) !important;
+}
+
+body.dark-mode .theme-toggle:focus-visible {
+  outline: 2.5px solid #38bdf8 !important;
+  outline-offset: 2px !important;
+  background-color: rgba(56, 189, 248, 0.25) !important;
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 3.5px rgba(56, 189, 248, 0.3) !important;
+}
+
+.lang-switcher:focus-visible {
+  outline: 2.5px solid var(--primary) !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 3.5px rgba(var(--primary-rgb), 0.25) !important;
+}
+
+/* ── Sidebar Navigation Tabs & Exit Focus Styles ── */
+.portal-tab-btn:focus-visible,
+.admin-tab-btn:focus-visible {
+  outline: 2.5px solid var(--primary) !important;
+  outline-offset: 2px !important;
+  background: rgba(var(--primary-rgb), 0.12) !important;
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.2) !important;
+}
+
+body.dark-mode .portal-tab-btn:focus-visible,
+body.dark-mode .admin-tab-btn:focus-visible {
+  outline: 2.5px solid #38bdf8 !important;
+  outline-offset: 2px !important;
+  background: rgba(56, 189, 248, 0.18) !important;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25) !important;
+}
+
+.portal-exit-btn-new:focus-visible {
+  outline: 2.5px solid #e63946 !important;
+  outline-offset: 2px !important;
+  background: rgba(230, 57, 70, 0.2) !important;
+  box-shadow: 0 0 0 3.5px rgba(230, 57, 70, 0.25) !important;
 }
