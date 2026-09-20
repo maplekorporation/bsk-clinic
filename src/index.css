@@ -4455,6 +4455,8 @@ table {
         text-align: right !important;
         display: flex !important;
         flex-direction: column !important;
+        flex-shrink: 0 !important;
+        white-space: nowrap !important;
     }
 
     .invoice-logo-img {
@@ -4487,6 +4489,7 @@ table {
 
     .invoice-license-item {
         font-size: 0.7rem !important;
+        white-space: nowrap !important;
     }
 
     .invoice-divider-bar {
@@ -9858,6 +9861,8 @@ body.dark-mode .invoice-preview-card::before {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .invoice-tag-tax {
@@ -9876,6 +9881,7 @@ body.dark-mode .invoice-preview-card::before {
     font-size: 0.76rem;
     color: var(--text-secondary);
     margin: 2px 0;
+    white-space: nowrap;
 }
 
 .invoice-license-item strong {

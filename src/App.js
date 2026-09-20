@@ -4628,7 +4628,7 @@ function App() {
                   </div>
                   <div className="invoice-license-block">
                     <span className="invoice-tag-tax">INVOICE</span>
-                    <p className="invoice-license-item"><strong>Reg No:</strong> I2026-1931</p>
+                    <p className="invoice-license-item" style={{ whiteSpace: 'nowrap' }}><strong>Reg No:</strong> I2026-1931</p>
                   </div>
                 </div>
 
