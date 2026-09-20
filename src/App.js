@@ -427,10 +427,60 @@ function App() {
   });
 
   const [activeInvoice, setActiveInvoice] = useState(null);
+  const getDisplayInvoiceNumber = (inv) => {
+    if (!inv) return '';
+    const invoiceYear = inv.date ? new Date(inv.date).getFullYear() : new Date().getFullYear();
+    const parsedId = parseInt(inv.id, 10);
+    if (!isNaN(parsedId)) {
+      return `INV/${invoiceYear}/${1000 + parsedId}`;
+    }
+    const maxBookingId = bookingsList.reduce((max, b) => {
+      const n = parseInt(b.id, 10);
+      return !isNaN(n) && n > max ? n : max;
+    }, 0);
+    const offlineList = bookingsList.filter(b => b.isOffline || isNaN(parseInt(b.id, 10)));
+    const idx = offlineList.findIndex(b => b.id === inv.id);
+    const offset = idx >= 0 ? (offlineList.length - idx) : 1;
+    return `INV/${invoiceYear}/${1000 + maxBookingId + offset}`;
+  };
+
+  const getDisplayPatientUhid = (inv) => {
+    if (!inv) return 'BSK-UHID-1001';
+    const parsedPid = parseInt(inv.patientId, 10);
+    if (!isNaN(parsedPid)) {
+      return `BSK-UHID-${1000 + parsedPid}`;
+    }
+    const maxPatientId = patientsList.reduce((max, p) => {
+      const n = parseInt(p.id, 10);
+      return !isNaN(n) && n > max ? n : max;
+    }, 0);
+    return `BSK-UHID-${1000 + maxPatientId + 1}`;
+  };
+
   const [emptyPriceAlert, setEmptyPriceAlert] = useState(null);
   const [quickModalPrice, setQuickModalPrice] = useState('');
   const [dashboardStats, setDashboardStats] = useState(null);
   const [isSavingBooking, setIsSavingBooking] = useState(false);
+  const [syncState, setSyncState] = useState(db.syncManager ? db.syncManager.getState() : { isOnline: true, isSyncing: false, pendingCount: 0 });
+
+  useEffect(() => {
+    if (db.syncManager) {
+      const unsubscribe = db.syncManager.subscribe(async (state) => {
+        setSyncState(state);
+        if (!state.isSyncing && state.pendingCount === 0 && (view === 'receptionist' || view === 'admin')) {
+          try {
+            const [freshBookings, freshPatients] = await Promise.all([
+              db.getBookings(),
+              db.getPatients().catch(() => [])
+            ]);
+            if (freshBookings) setBookingsList(freshBookings);
+            if (freshPatients && freshPatients.length) setPatientsList(freshPatients);
+          } catch (_) {}
+        }
+      });
+      return unsubscribe;
+    }
+  }, [view]);
 
   // Accessibility and keyboard navigation refs for booking & registration flow
   const patientSearchInputRef = useRef(null);
@@ -786,6 +836,90 @@ function App() {
             )}
             
             <div className="nav-actions">
+              {(view === 'receptionist' || view === 'admin') && (
+                <div className="portal-sync-status-container" style={{ display: 'inline-flex', alignItems: 'center', marginRight: '10px' }}>
+                  {!syncState.isOnline ? (
+                    <span 
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '5px 12px',
+                        borderRadius: '20px',
+                        fontSize: '0.8rem',
+                        fontWeight: '600',
+                        background: '#fef3c7',
+                        color: '#92400e',
+                        border: '1px solid #fde68a'
+                      }}
+                      title="Offline mode active. New bookings and patients are safely stored locally in IndexedDB and will auto-sync when online."
+                    >
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#d97706', display: 'inline-block' }}></span>
+                      Offline {syncState.pendingCount > 0 ? `(${syncState.pendingCount} pending)` : ''}
+                    </span>
+                  ) : syncState.isSyncing ? (
+                    <span 
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '5px 12px',
+                        borderRadius: '20px',
+                        fontSize: '0.8rem',
+                        fontWeight: '600',
+                        background: '#e0f2fe',
+                        color: '#0369a1',
+                        border: '1px solid #bae6fd'
+                      }}
+                    >
+                      <i className="fa-solid fa-spinner fa-spin"></i>
+                      Syncing {syncState.pendingCount} item{syncState.pendingCount === 1 ? '' : 's'}...
+                    </span>
+                  ) : syncState.pendingCount > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => db.syncManager.triggerSync()}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '5px 12px',
+                        borderRadius: '20px',
+                        fontSize: '0.8rem',
+                        fontWeight: '600',
+                        background: '#fef9c3',
+                        color: '#854d0e',
+                        border: '1px solid #fef08a',
+                        cursor: 'pointer'
+                      }}
+                      title="Click to sync pending records with backend"
+                    >
+                      <i className="fa-solid fa-cloud-arrow-up"></i>
+                      Sync Now ({syncState.pendingCount})
+                    </button>
+                  ) : (
+                    <span 
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '5px 10px',
+                        borderRadius: '20px',
+                        fontSize: '0.78rem',
+                        fontWeight: '500',
+                        color: '#059669',
+                        background: '#ecfdf5',
+                        border: '1px solid #a7f3d0'
+                      }}
+                      title="Connected to BSK Clinic Service"
+                    >
+                      <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }}></span>
+                      Online
+                    </span>
+                  )}
+                </div>
+              )}
+
               {view === 'admin' && (
                 <button 
                   type="button"
@@ -2336,6 +2470,11 @@ function App() {
                               <td>
                                 <div className="patient-name-cell">
                                   <strong>{p.name}</strong>
+                                  {(p.isOffline || (p.id && String(p.id).startsWith('temp_'))) && (
+                                    <span className="pending-sync-badge">
+                                      <i className="fa-solid fa-cloud-arrow-up"></i> Pending Sync
+                                    </span>
+                                  )}
                                 </div>
                               </td>
                               <td>
@@ -2451,6 +2590,11 @@ function App() {
                                 </div>
                                 <div className="patient-card-name-id">
                                   <span className="patient-card-name">{p.name}</span>
+                                  {(p.isOffline || (p.id && String(p.id).startsWith('temp_'))) && (
+                                    <span className="pending-sync-badge">
+                                      <i className="fa-solid fa-cloud-arrow-up"></i> Pending Sync
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                               <span className={`patient-gender-badge ${p.gender === 'Male' ? 'gender-male' : p.gender === 'Female' ? 'gender-female' : 'gender-other'}`}>
@@ -2600,6 +2744,11 @@ function App() {
                                 <td>
                                   <div className="bookings-table-patient-name">
                                     <strong>{b.patientName}</strong>
+                                    {b.isOffline && (
+                                      <span className="pending-sync-badge">
+                                        <i className="fa-solid fa-cloud-arrow-up"></i> Pending Sync
+                                      </span>
+                                    )}
                                   </div>
                                 </td>
                                 <td>
@@ -3680,7 +3829,14 @@ function App() {
                                   {getInitials(p.name)}
                                 </div>
                               </td>
-                              <td><strong>{p.name}</strong></td>
+                              <td>
+                                <strong>{p.name}</strong>
+                                {(p.isOffline || (p.id && String(p.id).startsWith('temp_'))) && (
+                                  <span className="pending-sync-badge">
+                                    <i className="fa-solid fa-cloud-arrow-up"></i> Pending Sync
+                                  </span>
+                                )}
+                              </td>
                               <td>
                                 <span style={{ opacity: 0.7 }}>
                                   <i className="fa-solid fa-phone" style={{ fontSize: '0.7rem', marginRight: '5px' }}></i>
@@ -5211,7 +5367,15 @@ function App() {
         <div className="invoice-modal-overlay">
           <div className="invoice-modal-container">
             <div className="invoice-modal-header">
-              <h3>Invoice Details - INV/2026/{1000 + parseInt(activeInvoice.id)}</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <h3 style={{ margin: 0 }}>Invoice Details - {getDisplayInvoiceNumber(activeInvoice)}</h3>
+                {activeInvoice.isOffline && (
+                  <span style={{ fontSize: '0.72rem', background: 'rgba(255, 255, 255, 0.2)', color: '#fef08a', padding: '3px 8px', borderRadius: '12px', fontWeight: '500' }}>
+                    <i className="fa-solid fa-clock-rotate-left" style={{ marginRight: '4px' }}></i>
+                    Saved locally • Auto-syncing
+                  </span>
+                )}
+              </div>
               <button 
                 onClick={() => setActiveInvoice(null)} 
                 style={{ color: 'white', fontSize: '1.5rem', cursor: 'pointer', border: 'none', background: 'none' }}
@@ -5254,7 +5418,7 @@ function App() {
                       <tbody>
                         <tr>
                           <th>UHID / Patient ID:</th>
-                          <td>BSK-UHID-{activeInvoice.patientId || '1001'}</td>
+                          <td>{getDisplayPatientUhid(activeInvoice)}</td>
                         </tr>
                         <tr>
                           <th>Patient Name:</th>
@@ -5284,7 +5448,7 @@ function App() {
                       <tbody>
                         <tr>
                           <th>Invoice Number:</th>
-                          <td>INV/2026/{1000 + parseInt(activeInvoice.id)}</td>
+                          <td><strong>{getDisplayInvoiceNumber(activeInvoice)}</strong></td>
                         </tr>
                         <tr>
                           <th>Billing Date:</th>

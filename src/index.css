@@ -7232,9 +7232,32 @@ body.dark-mode .btn-patient-book:hover {
 }
 
 /* Name Cell */
+.patient-name-cell {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
 .patient-name-cell strong {
     font-size: 0.95rem;
     color: var(--text-primary);
+}
+
+.pending-sync-badge {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    font-size: 0.72rem;
+    background: #fef3c7;
+    color: #b45309;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 600;
+    line-height: 1.35;
+    border: 1px solid #fde68a;
 }
 
 /* Phone Cell */

@@ -1,3 +1,5 @@
+import { offlineStorage } from './offlineStorage';
+import { syncManager } from './syncManager';
 // API Client — talks to the BSK Clinic Spring Boot backend.
 // Replaces the old localStorage-based mock (db.js).
 // All requests include JWT auth headers after login.
@@ -141,6 +143,7 @@ export const db = {
           }
 
           try { localStorage.setItem(STORAGE_KEY, JSON.stringify(mapped)); } catch (_) {}
+          offlineStorage.cacheServices(mapped).catch(() => {});
           return mapped;
         }
       }
@@ -367,33 +370,113 @@ export const db = {
    * Fetch all patients.
    */
   getPatients: async () => {
-    const res = await fetch(`${API_BASE}/patients`, {
-      headers: authHeaders(),
-    });
-    return handleResponse(res);
+    let serverPatients = [];
+    try {
+      const res = await fetch(`${API_BASE}/patients`, {
+        headers: authHeaders(),
+      });
+      const data = await handleResponse(res);
+      if (Array.isArray(data)) {
+        serverPatients = data;
+        offlineStorage.cachePatients(data).catch(() => {});
+      }
+    } catch (e) {
+      console.warn('Backend getPatients failed, loading from offline cache:', e.message);
+      const cached = await offlineStorage.getCachedPatients();
+      serverPatients = Array.isArray(cached) ? cached : [];
+    }
+
+    // Merge any pending offline outbox patients so they appear immediately with Pending Sync status
+    try {
+      const pendingItems = await offlineStorage.getPendingOutboxItems();
+      const pendingPatients = pendingItems
+        .filter(item => item.type === 'PATIENT' && item.payload)
+        .map(item => ({
+          ...item.payload,
+          id: item.tempId,
+          isOffline: true,
+          createdAt: item.createdAt,
+        }))
+        .filter(pp => !serverPatients.some(sp => sp.id === pp.id || (sp.name === pp.name && sp.phone === pp.phone)));
+
+      return [...pendingPatients, ...serverPatients];
+    } catch (_) {
+      return serverPatients;
+    }
   },
 
   /**
    * Search patients by name or phone.
    */
   searchPatients: async (query) => {
-    const res = await fetch(`${API_BASE}/patients/search?query=${encodeURIComponent(query)}`, {
-      headers: authHeaders(),
-    });
-    return handleResponse(res);
+    try {
+      const res = await fetch(`${API_BASE}/patients/search?query=${encodeURIComponent(query)}`, {
+        headers: authHeaders(),
+      });
+      return await handleResponse(res);
+    } catch (e) {
+      console.warn('Backend searchPatients failed, searching offline cache:', e.message);
+      const cached = await offlineStorage.getCachedPatients();
+      const q = (query || '').trim().toLowerCase();
+      return (cached || []).filter(p => 
+        (p.name && p.name.toLowerCase().includes(q)) || 
+        (p.phone && p.phone.includes(q))
+      ).slice(0, 20);
+    }
   },
 
   /**
-   * Create a new patient.
+   * Create a new patient with offline outbox fallback.
    * @param {{ name, phone, age, gender, address }} patient
    */
   savePatient: async (patient) => {
-    const res = await fetch(`${API_BASE}/patients`, {
-      method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify(patient),
-    });
-    return handleResponse(res);
+    const isOnline = syncManager.isOnline && (typeof navigator === 'undefined' || navigator.onLine);
+
+    if (!isOnline) {
+      const tempId = 'temp_p_' + Date.now();
+      const offlinePatient = {
+        ...patient,
+        id: tempId,
+        isOffline: true,
+        createdAt: new Date().toISOString(),
+      };
+      await offlineStorage.addToOutbox({
+        type: 'PATIENT',
+        payload: patient,
+        tempId,
+      });
+      await offlineStorage.addCachedPatient(offlinePatient);
+      syncManager.updatePendingCount();
+      return offlinePatient;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/patients`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify(patient),
+      });
+      const data = await handleResponse(res);
+      offlineStorage.addCachedPatient(data).catch(() => {});
+      return data;
+    } catch (e) {
+      console.warn('Backend savePatient failed, saving to offline outbox:', e.message);
+      const tempId = 'temp_p_' + Date.now();
+      const offlinePatient = {
+        ...patient,
+        id: tempId,
+        isOffline: true,
+        createdAt: new Date().toISOString(),
+      };
+      await offlineStorage.addToOutbox({
+        type: 'PATIENT',
+        payload: patient,
+        tempId,
+      });
+      await offlineStorage.addCachedPatient(offlinePatient);
+      syncManager.updatePendingCount();
+      return offlinePatient;
+    }
   },
 
   /**
@@ -422,35 +505,108 @@ export const db = {
   // ──── Bookings ─────────────────────────────────────
 
   /**
-   * Fetch all bookings (ordered by most recent).
+   * Fetch all bookings (ordered by most recent) with offline pending items merged.
    */
   getBookings: async () => {
-    const res = await fetch(`${API_BASE}/bookings`, {
-      headers: authHeaders(),
-    });
-    const data = await handleResponse(res);
-    return (data || []).map(b => ({
-      ...b,
-      services: typeof b.services === 'string' ? JSON.parse(b.services) : (b.services || [])
-    }));
+    try {
+      const res = await fetch(`${API_BASE}/bookings`, {
+        headers: authHeaders(),
+      });
+      const data = await handleResponse(res);
+      const parsedServerBookings = (data || []).map(b => ({
+        ...b,
+        services: typeof b.services === 'string' ? JSON.parse(b.services) : (b.services || [])
+      }));
+
+      // Merge any pending offline outbox bookings
+      const pendingItems = await offlineStorage.getPendingOutboxItems();
+      const pendingBookings = pendingItems
+        .filter(item => item.type === 'BOOKING' && item.payload)
+        .map(item => ({
+          ...item.payload,
+          id: item.tempId,
+          uid: item.tempId ? `OFFLINE-${item.tempId.replace('offline_', '')}` : 'OFFLINE-BKG',
+          isOffline: true,
+          status: 'Pending Sync',
+          createdAt: item.createdAt,
+        }));
+
+      const merged = [...pendingBookings, ...parsedServerBookings];
+      offlineStorage.cacheBookings(merged).catch(() => {});
+      return merged;
+    } catch (e) {
+      console.warn('Backend getBookings failed, reading from offline cache:', e.message);
+      const cached = await offlineStorage.getCachedBookings();
+      if (cached && cached.length > 0) return cached;
+      throw e;
+    }
   },
 
   /**
-   * Create a new booking.
-   * The backend will auto-compute subtotal/gst/total and generate a UID.
+   * Create a new booking with offline outbox fallback.
+   * Generates a clientRequestId for idempotent replay.
    * @param {{ patientId?, patientName?, patientPhone?, patientAge?, patientGender?, patientAddress?, services: [{name, price}], paymentMode, referredBy }} booking
    */
   saveBooking: async (booking) => {
-    const res = await fetch(`${API_BASE}/bookings`, {
-      method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify(booking),
-    });
-    const data = await handleResponse(res);
-    if (data) {
-      data.services = typeof data.services === 'string' ? JSON.parse(data.services) : (data.services || []);
+    const clientRequestId = 'req_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+    const bookingWithIdempotency = { ...booking, clientRequestId };
+
+    const isOnline = syncManager.isOnline && (typeof navigator === 'undefined' || navigator.onLine);
+
+    if (!isOnline) {
+      const tempId = 'offline_' + Date.now();
+      const offlineBooking = {
+        ...bookingWithIdempotency,
+        id: tempId,
+        uid: `OFFLINE-${Math.floor(1000 + Math.random() * 9000)}`,
+        isOffline: true,
+        createdAt: new Date().toISOString(),
+        status: 'Pending Sync',
+      };
+      await offlineStorage.addToOutbox({
+        type: 'BOOKING',
+        payload: bookingWithIdempotency,
+        clientRequestId,
+        tempId,
+      });
+      await offlineStorage.addCachedBooking(offlineBooking);
+      syncManager.updatePendingCount();
+      return offlineBooking;
     }
-    return data;
+
+    try {
+      const res = await fetch(`${API_BASE}/bookings`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify(bookingWithIdempotency),
+      });
+      const data = await handleResponse(res);
+      if (data) {
+        data.services = typeof data.services === 'string' ? JSON.parse(data.services) : (data.services || []);
+        offlineStorage.addCachedBooking(data).catch(() => {});
+      }
+      return data;
+    } catch (e) {
+      console.warn('Backend saveBooking failed, queuing into offline outbox:', e.message);
+      const tempId = 'offline_' + Date.now();
+      const offlineBooking = {
+        ...bookingWithIdempotency,
+        id: tempId,
+        uid: `OFFLINE-${Math.floor(1000 + Math.random() * 9000)}`,
+        isOffline: true,
+        createdAt: new Date().toISOString(),
+        status: 'Pending Sync',
+      };
+      await offlineStorage.addToOutbox({
+        type: 'BOOKING',
+        payload: bookingWithIdempotency,
+        clientRequestId,
+        tempId,
+      });
+      await offlineStorage.addCachedBooking(offlineBooking);
+      syncManager.updatePendingCount();
+      return offlineBooking;
+    }
   },
 
   /**
@@ -479,3 +635,7 @@ export const db = {
     return handleResponse(res);
   },
 };
+
+
+db.syncManager = syncManager;
+db.offlineStorage = offlineStorage;
