@@ -126,17 +126,20 @@ function App() {
     setOverviewBookingsPage(1);
   }, [adminPeriodFilter, overviewBookingIdSearch]);
 
-  // Redirect to login if not authenticated, or to dashboard if already authenticated
+  // Redirect to login if not authenticated, or to generic portal if already authenticated
   useEffect(() => {
-    if (hash === '#/receptionist' && !isAuthenticated) {
-      navigate('/login');
-    } else if (hash === '#/admin' && !isAdminAuthenticated) {
-      navigate('/login');
+    const isLoggedIn = isAuthenticated || isAdminAuthenticated;
+
+    if (hash === '#/portal' || hash === '#/receptionist' || hash === '#/admin') {
+      if (!isLoggedIn) {
+        navigate('/login');
+      } else if (hash !== '#/portal') {
+        // Mask specific role URLs to generic /#/portal
+        navigate('/portal');
+      }
     } else if (hash === '#/login' || hash === '#/registration' || hash === '#/admin-login') {
-      if (isAdminAuthenticated) {
-        navigate('/admin');
-      } else if (isAuthenticated) {
-        navigate('/receptionist');
+      if (isLoggedIn) {
+        navigate('/portal');
       } else if (hash !== '#/login') {
         navigate('/login');
       }
@@ -153,17 +156,17 @@ function App() {
         setIsAdminAuthenticated(true);
         setIsAuthenticated(true);
         setAuthError('');
-        navigate('/admin');
+        navigate('/portal');
       } else if (role === 'RECEPTIONIST') {
         setIsAuthenticated(true);
         setIsAdminAuthenticated(false);
         setAuthError('');
-        navigate('/receptionist');
+        navigate('/portal');
       } else if (role === 'DOCTOR') {
         setIsAuthenticated(true);
         setIsAdminAuthenticated(false);
         setAuthError('');
-        navigate('/receptionist');
+        navigate('/portal');
       } else {
         db.logout();
         setIsAuthenticated(false);
@@ -471,16 +474,20 @@ function App() {
 
   // Sync view state with hash route
   useEffect(() => {
-    if (hash === '#/receptionist') {
-      setView('receptionist');
-    } else if (hash === '#/admin') {
-      setView('admin');
+    if (hash === '#/portal' || hash === '#/receptionist' || hash === '#/admin') {
+      if (isAdminAuthenticated) {
+        setView('admin');
+      } else if (isAuthenticated) {
+        setView('receptionist');
+      } else {
+        setView('login');
+      }
     } else if (hash === '#/login' || hash === '#/registration' || hash === '#/admin-login') {
       setView('login');
     } else {
       setView('landing');
     }
-  }, [hash]);
+  }, [hash, isAdminAuthenticated, isAuthenticated]);
 
   // Debounced API search for patients when query >= 2 characters
   useEffect(() => {
